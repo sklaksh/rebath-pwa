@@ -143,13 +143,14 @@ function NewQuoteContent() {
       // Update quantity
       setQuoteItems(prev => prev.map(item => 
         item.fixtureId === option.id 
-          ? { ...item, quantity: item.quantity + 1, totalPrice: (item.quantity + 1) * (item.unitPrice + item.installationCost) }
+          ? { ...item, quantity: item.quantity + 1, totalPrice: (item.quantity + 1) * (item.unitPrice + (item.installationCost || 0)) }
           : item
       ))
     } else {
       // Add new item
       const newItem: QuoteItem = {
         id: `temp-${Date.now()}`,
+        type: 'fixture',
         fixtureId: option.id,
         name: option.name,
         description: option.description,
@@ -161,7 +162,7 @@ function NewQuoteContent() {
         quantity: 1,
         unitPrice: option.basePrice,
         installationCost: option.installationCost,
-        totalPrice: option.basePrice + option.installationCost,
+        totalPrice: option.basePrice + (option.installationCost || 0),
         notes: ''
       }
       setQuoteItems(prev => [...prev, newItem])
@@ -176,7 +177,7 @@ function NewQuoteContent() {
     
     setQuoteItems(prev => prev.map(item => 
       item.id === itemId 
-        ? { ...item, quantity, totalPrice: quantity * (item.unitPrice + item.installationCost) }
+        ? { ...item, quantity, totalPrice: quantity * (item.unitPrice + (item.installationCost || 0)) }
         : item
     ))
   }

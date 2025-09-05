@@ -149,13 +149,14 @@ function EditQuoteContent() {
       // Update quantity
       setQuoteItems(prev => prev.map(item => 
         item.fixtureId === option.id 
-          ? { ...item, quantity: item.quantity + 1, totalPrice: (item.quantity + 1) * (item.unitPrice + item.installationCost) }
+          ? { ...item, quantity: item.quantity + 1, totalPrice: (item.quantity + 1) * (item.unitPrice + (item.installationCost || 0)) }
           : item
       ))
     } else {
       // Add new item
       const newItem: QuoteItem = {
         id: `temp-${Date.now()}`,
+        type: 'fixture',
         fixtureId: option.id,
         name: option.name,
         description: option.description,
@@ -182,7 +183,7 @@ function EditQuoteContent() {
     
     setQuoteItems(prev => prev.map(item => 
       item.id === itemId 
-        ? { ...item, quantity, totalPrice: quantity * (item.unitPrice + item.installationCost) }
+        ? { ...item, quantity, totalPrice: quantity * (item.unitPrice + (item.installationCost || 0)) }
         : item
     ))
   }
@@ -193,7 +194,7 @@ function EditQuoteContent() {
         ? { 
             ...item, 
             [field]: value,
-            totalPrice: item.quantity * (field === 'unitPrice' ? value + item.installationCost : item.unitPrice + value)
+            totalPrice: item.quantity * (field === 'unitPrice' ? value + (item.installationCost || 0) : item.unitPrice + value)
           }
         : item
     ))
@@ -615,7 +616,7 @@ function EditQuoteContent() {
                             <label className="text-xs text-gray-500">Install Cost</label>
                             <Input
                               type="number"
-                              value={item.installationCost}
+                              value={item.installationCost || 0}
                               onChange={(e) => updateItemPrice(item.id, 'installationCost', Number(e.target.value))}
                               className="h-6 text-xs"
                               min="0"

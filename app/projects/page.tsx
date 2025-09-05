@@ -23,6 +23,27 @@ import { toast } from 'react-hot-toast'
 import type { Project } from '@/lib/services'
 
 function ProjectsContent() {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800'
+      case 'in_progress': return 'bg-blue-100 text-blue-800'
+      case 'started': return 'bg-purple-100 text-purple-800'
+      case 'quote_ready': return 'bg-yellow-100 text-yellow-800'
+      case 'assessment': return 'bg-gray-100 text-gray-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'completed': return 'Completed'
+      case 'in_progress': return 'In Progress'
+      case 'started': return 'Started'
+      case 'quote_ready': return 'Quote Ready'
+      case 'assessment': return 'Assessment'
+      default: return status
+    }
+  }
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,22 +71,6 @@ function ProjectsContent() {
     loadProjects()
   }, [])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800'
-      case 'quote_ready':
-        return 'bg-green-100 text-green-800'
-      case 'assessment':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'completed':
-        return 'bg-green-100 text-green-800'
-      case 'cancelled':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -218,15 +223,9 @@ function ProjectsContent() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900 mb-1">
-                        {project.progress}%
-                      </div>
-                      <div className="w-16 h-2 bg-gray-200 rounded-full">
-                        <div
-                          className="h-2 bg-primary-500 rounded-full"
-                          style={{ width: `${project.progress}%` }}
-                        />
-                      </div>
+                      <Badge className={getStatusColor(project.status)}>
+                        {getStatusText(project.status)}
+                      </Badge>
                     </div>
                   </div>
                 </CardContent>

@@ -70,6 +70,8 @@ function DashboardContent() {
     switch (status) {
       case 'in_progress':
         return 'bg-blue-100 text-blue-800'
+      case 'started':
+        return 'bg-purple-100 text-purple-800'
       case 'quote_ready':
         return 'bg-green-100 text-green-800'
       case 'assessment':
@@ -80,6 +82,25 @@ function DashboardContent() {
         return 'bg-red-100 text-red-800'
       default:
         return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'in_progress':
+        return 'In Progress'
+      case 'started':
+        return 'Started'
+      case 'quote_ready':
+        return 'Quote Ready'
+      case 'assessment':
+        return 'Assessment'
+      case 'completed':
+        return 'Completed'
+      case 'cancelled':
+        return 'Cancelled'
+      default:
+        return status
     }
   }
 
@@ -170,15 +191,11 @@ function DashboardContent() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">
-                        {project.progress}%
-                      </div>
-                      <div className="w-16 h-2 bg-gray-200 rounded-full mt-1">
-                        <div
-                          className="h-2 bg-primary-500 rounded-full"
-                          style={{ width: `${project.progress}%` }}
-                        />
-                      </div>
+                      <Badge 
+                        className={`text-xs ${getStatusColor(project.status)}`}
+                      >
+                        {getStatusText(project.status)}
+                      </Badge>
                     </div>
                   </div>
                 </Card>

@@ -8,6 +8,7 @@ export { photoService } from './photo.service'
 export { quoteService } from './quote.service'
 export { fixtureService } from './fixture.service'
 export { pdfService } from './pdf.service'
+export { jobWorkService } from './job-work.service'
 
 // Export types
 export type {
@@ -51,3 +52,10 @@ export type {
   FixtureOption,
   FixtureError
 } from './fixture.service'
+
+export type {
+  JobWorkItem,
+  CreateJobWorkItemData,
+  UpdateJobWorkItemData,
+  JobWorkError
+} from './job-work.service'

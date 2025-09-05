@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import type { Project as DbProject, Inserts as ProjectInsert, Updates as ProjectUpdate } from '@/lib/supabase/types'
 
 export interface Project {
@@ -9,7 +9,7 @@ export interface Project {
   clientPhone?: string
   address: string
   projectType: 'bathroom' | 'kitchen' | 'full_remodel'
-  status: 'assessment' | 'quote_ready' | 'in_progress' | 'completed' | 'cancelled'
+  status: 'assessment' | 'quote_ready' | 'started' | 'in_progress' | 'completed' | 'cancelled'
   priority: 'low' | 'medium' | 'high' | 'urgent'
   estimatedStartDate?: string
   estimatedCompletionDate?: string
@@ -17,8 +17,8 @@ export interface Project {
   actualCompletionDate?: string
   totalBudget?: number
   actualCost?: number
+  jobDescription?: string
   notes?: string
-  progress: number
   createdAt: string
   updatedAt: string
   userId: string
@@ -38,10 +38,10 @@ export interface ProjectStats {
 }
 
 class ProjectService {
-  private supabase = createClient()
+  private supabase = supabase
 
   // Create a new project
-  async createProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'progress'>): Promise<{ project: Project | null; success: boolean; error: ProjectError | null }> {
+  async createProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<{ project: Project | null; success: boolean; error: ProjectError | null }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser()
       if (!user) {
@@ -174,8 +174,9 @@ class ProjectService {
       if (updates.actualStartDate !== undefined) updateData.actual_start_date = updates.actualStartDate ? new Date(updates.actualStartDate).toISOString() : null
       if (updates.actualCompletionDate !== undefined) updateData.actual_completion_date = updates.actualCompletionDate ? new Date(updates.actualCompletionDate).toISOString() : null
       
-      // Budget and notes
+      // Budget, job description and notes
       if (updates.totalBudget !== undefined) updateData.total_budget = updates.totalBudget || null
+      if (updates.jobDescription !== undefined) updateData.job_description = updates.jobDescription || null
       if (updates.notes !== undefined) updateData.notes = updates.notes || null
 
       const { data, error } = await this.supabase
@@ -451,6 +452,41 @@ class ProjectService {
     }
   }
 
+  // Start a project
+  async startProject(projectId: string): Promise<{ success: boolean; error: ProjectError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: { message: 'User not authenticated' } }
+      }
+
+      const today = new Date().toISOString().split('T')[0]
+
+      const { error } = await this.supabase
+        .from('projects')
+        .update({ 
+          status: 'started',
+          actual_start_date: today
+        })
+        .eq('id', projectId)
+        .eq('user_id', user.id)
+
+      if (error) {
+        return {
+          success: false,
+          error: { message: error.message, code: error.code }
+        }
+      }
+
+      return { success: true, error: null }
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: 'Failed to start project' }
+      }
+    }
+  }
+
   // Export project data
   exportProject(project: Project): string {
     return JSON.stringify(project, null, 2)
@@ -468,18 +504,6 @@ class ProjectService {
 
   // Map database project to application project
   private mapDbProjectToProject(dbProject: DbProject): Project {
-    // Calculate progress based on status
-    const getProgressFromStatus = (status: string): number => {
-      switch (status) {
-        case 'assessment': return 10
-        case 'quote_ready': return 30
-        case 'in_progress': return 60
-        case 'completed': return 100
-        case 'cancelled': return 0
-        default: return 0
-      }
-    }
-
     return {
       id: dbProject.id,
       name: dbProject.client_name, // Using client_name as name for now
@@ -496,8 +520,8 @@ class ProjectService {
       actualCompletionDate: dbProject.actual_completion_date || undefined,
       totalBudget: dbProject.total_budget || undefined,
       actualCost: 0, // Will be calculated
+      jobDescription: dbProject.job_description || undefined,
       notes: dbProject.notes || undefined,
-      progress: getProgressFromStatus(dbProject.status),
       createdAt: dbProject.created_at,
       updatedAt: dbProject.updated_at,
       userId: dbProject.user_id

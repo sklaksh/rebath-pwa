@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input'
 import { ProtectedRoute } from '@/components/protected-route'
 import { projectService } from '@/lib/services'
 import { toast } from 'react-hot-toast'
+import { JobWorkItems } from '@/components/job-work-items'
+import type { JobWorkItem } from '@/lib/services'
 
 function NewProjectContent() {
   const router = useRouter()
@@ -25,6 +27,8 @@ function NewProjectContent() {
     totalBudget: '',
     notes: ''
   })
+  const [workItems, setWorkItems] = useState<JobWorkItem[]>([])
+  const [projectId, setProjectId] = useState<string | null>(null)
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -410,6 +414,13 @@ function NewProjectContent() {
                   onChange={(e) => handleInputChange('totalBudget', e.target.value)}
                   placeholder="0.00"
                 />
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Scope of Work</h4>
+                <p className="text-sm text-blue-700">
+                  After creating the project, you can add detailed work items for each room in the "Work Scope & Tasks" section.
+                  This allows you to break down the work by room and track individual tasks with priorities and time estimates.
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

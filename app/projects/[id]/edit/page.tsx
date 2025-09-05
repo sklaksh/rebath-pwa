@@ -25,7 +25,7 @@ function EditProjectContent() {
     clientPhone: '',
     address: '',
     projectType: 'bathroom' as 'bathroom' | 'kitchen' | 'full_remodel',
-    status: 'assessment' as 'assessment' | 'quote_ready' | 'in_progress' | 'completed' | 'cancelled',
+    status: 'assessment' as 'assessment' | 'quote_ready' | 'started' | 'in_progress' | 'completed' | 'cancelled',
     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
     estimatedStartDate: '',
     estimatedCompletionDate: '',
@@ -372,6 +372,13 @@ function EditProjectContent() {
                 min="0"
                 step="0.01"
               />
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-blue-900 mb-2">Scope of Work</h4>
+              <p className="text-sm text-blue-700">
+                Use the "Work Scope & Tasks" section on the project detail page to add detailed work items for each room.
+                This allows you to break down the work by room and track individual tasks with priorities and time estimates.
+              </p>
             </div>
             <div>
               <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">

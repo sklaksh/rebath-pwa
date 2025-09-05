@@ -13,7 +13,8 @@ import {
   Mail,
   Plus,
   FileText,
-  Calculator
+  Calculator,
+  Play
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -22,6 +23,7 @@ import { ProtectedRoute } from '@/components/protected-route'
 import { projectService, roomService, assessmentService, quoteService } from '@/lib/services'
 import { toast } from 'react-hot-toast'
 import type { Project, RoomType, AssessmentData, QuoteData } from '@/lib/services'
+import { JobWorkItems } from '@/components/job-work-items'
 
 function ProjectDetailContent() {
   const router = useRouter()
@@ -102,6 +104,18 @@ function ProjectDetailContent() {
     }
   }
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'assessment': return 'Assessment'
+      case 'quote_ready': return 'Quote Ready'
+      case 'started': return 'Started'
+      case 'in_progress': return 'In Progress'
+      case 'completed': return 'Completed'
+      case 'cancelled': return 'Cancelled'
+      default: return status
+    }
+  }
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
@@ -173,6 +187,31 @@ function ProjectDetailContent() {
     }
   }
 
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!project) return
+    
+    try {
+      console.log('Changing status to:', newStatus)
+      const updates = { status: newStatus }
+      
+      console.log('Updates object:', updates)
+      const { project: updatedProject, error } = await projectService.updateProject(project.id, updates)
+      
+      if (error) {
+        console.error('Update error:', error)
+        toast.error(`Failed to update status: ${error.message}`)
+      } else if (updatedProject) {
+        console.log('Status updated successfully')
+        toast.success(`Project status updated to ${getStatusText(newStatus)}`)
+        setProject(updatedProject)
+      }
+    } catch (error) {
+      console.error('Error updating project status:', error)
+      toast.error('An unexpected error occurred')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -214,9 +253,18 @@ function ProjectDetailContent() {
             <div>
               <h1 className="text-lg font-semibold text-gray-900">{project.name}</h1>
               <div className="flex items-center space-x-2">
-                <Badge className={getStatusColor(project.status)}>
-                  {project.status.replace('_', ' ')}
-                </Badge>
+                <select
+                  value={project.status}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="assessment">Assessment</option>
+                  <option value="quote_ready">Quote Ready</option>
+                  <option value="started">Started</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
                 <Badge className={getPriorityColor(project.priority)}>
                   {project.priority}
                 </Badge>
@@ -255,6 +303,16 @@ function ProjectDetailContent() {
                 <p className="text-gray-600">{project.notes}</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Job Work Items */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Work Scope & Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <JobWorkItems projectId={projectId} />
           </CardContent>
         </Card>
 
