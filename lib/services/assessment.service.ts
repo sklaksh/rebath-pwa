@@ -42,7 +42,7 @@ class AssessmentService {
   private supabase = createClient()
 
   // Save assessment draft to database
-  async saveDraft(assessment: AssessmentData): Promise<{ success: boolean; error: AssessmentError | null }> {
+  async saveDraft(assessment: AssessmentData): Promise<{ success: boolean; assessment?: AssessmentData; error: AssessmentError | null }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser()
       if (!user) {
@@ -76,9 +76,11 @@ class AssessmentService {
         }
       } else {
         // Create new assessment
-        const { error } = await this.supabase
+        const { data, error } = await this.supabase
           .from('assessments')
           .insert(assessmentData)
+          .select()
+          .single()
 
         if (error) {
           return {
@@ -86,9 +88,12 @@ class AssessmentService {
             error: { message: error.message, code: error.code }
           }
         }
+
+        const savedAssessment = this.mapDbAssessmentToAssessment(data)
+        return { success: true, assessment: savedAssessment, error: null }
       }
       
-      return { success: true, error: null }
+      return { success: true, assessment: { ...assessment }, error: null }
     } catch (error) {
       return {
         success: false,
@@ -181,7 +186,48 @@ class AssessmentService {
     }
   }
 
-  // Delete an assessment
+  // Update assessment
+  async updateAssessment(id: string, assessmentData: AssessmentData): Promise<{ success: boolean; error: AssessmentError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: { message: 'User not authenticated' } }
+      }
+
+      const updateData: AssessmentUpdate<'assessments'> = {
+        project_id: assessmentData.projectId,
+        room_type: assessmentData.roomType,
+        room_name: assessmentData.roomName,
+        fixtures: assessmentData.fixtures,
+        measurements: assessmentData.measurements,
+        photos: assessmentData.photos,
+        notes: assessmentData.notes,
+        status: assessmentData.status,
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await this.supabase
+        .from('assessments')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        return {
+          success: false,
+          error: { message: error.message, code: error.code }
+        }
+      }
+      
+      return { success: true, error: null }
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: 'Failed to update assessment' }
+      }
+    }
+  }
+
   async deleteAssessment(id: string): Promise<{ success: boolean; error: AssessmentError | null }> {
     try {
       const { error } = await this.supabase

@@ -19,9 +19,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ProtectedRoute } from '@/components/protected-route'
-import { projectService, roomService } from '@/lib/services'
+import { projectService, roomService, assessmentService } from '@/lib/services'
 import { toast } from 'react-hot-toast'
-import type { Project, RoomType } from '@/lib/services'
+import type { Project, RoomType, AssessmentData } from '@/lib/services'
 
 function ProjectDetailContent() {
   const router = useRouter()
@@ -30,6 +30,7 @@ function ProjectDetailContent() {
   
   const [project, setProject] = useState<Project | null>(null)
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
+  const [assessments, setAssessments] = useState<AssessmentData[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -51,6 +52,15 @@ function ProjectDetailContent() {
           console.error('Error loading room types:', roomTypesError)
         } else {
           setRoomTypes(fetchedRoomTypes)
+        }
+
+        // Load assessments for this project
+        const { assessments: fetchedAssessments, error: assessmentsError } = await assessmentService.getAssessmentsByProject(projectId)
+        if (assessmentsError) {
+          console.error('Error loading assessments:', assessmentsError)
+          // Don't show error toast for assessments as they might not exist yet
+        } else {
+          setAssessments(fetchedAssessments)
         }
       } catch (error) {
         toast.error('Failed to load data')
@@ -116,6 +126,24 @@ function ProjectDetailContent() {
     }
     
     return iconMap[roomType.name] || '🏠'
+  }
+
+  const getRoomTypeDisplayName = (roomTypeName: string): string => {
+    const roomType = roomTypes.find(rt => rt.name === roomTypeName)
+    return roomType?.displayName || roomTypeName.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+
+  const getAssessmentStatusColor = (status: string) => {
+    switch (status) {
+      case 'submitted':
+        return 'bg-green-100 text-green-800'
+      case 'reviewed':
+        return 'bg-blue-100 text-blue-800'
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
   }
 
   if (loading) {
@@ -287,6 +315,70 @@ function ProjectDetailContent() {
                 </span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Project Assessments */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Project Assessments</span>
+              <Badge variant="outline">
+                {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {assessments.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-4">
+                  <FileText className="h-12 w-12 mx-auto" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No assessments yet</h3>
+                <p className="text-gray-600 mb-4">
+                  Start by creating room assessments for this project.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {assessments.map((assessment) => (
+                  <div
+                    key={assessment.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="text-2xl">
+                        {getRoomTypeIcon(roomTypes.find(rt => rt.name === assessment.roomType) || { name: assessment.roomType, icon: '🏠' } as RoomType)}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {assessment.roomName || getRoomTypeDisplayName(assessment.roomType)}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {getRoomTypeDisplayName(assessment.roomType)} • {assessment.fixtures.length} fixtures
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Created {assessment.createdAt ? new Date(assessment.createdAt).toLocaleDateString() : 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Badge className={getAssessmentStatusColor(assessment.status)}>
+                        {assessment.status}
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/assessment/${assessment.roomType}/edit/${assessment.id}?projectId=${projectId}`)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

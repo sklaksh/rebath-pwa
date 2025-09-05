@@ -4,6 +4,7 @@ export { assessmentService } from './assessment.service'
 export { pricingService } from './pricing.service'
 export { projectService } from './project.service'
 export { roomService } from './room.service'
+export { photoService } from './photo.service'
 
 // Export types
 export type {

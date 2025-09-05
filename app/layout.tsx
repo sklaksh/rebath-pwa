@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { OfflineIndicator } from '@/components/offline-indicator'
+import { Navigation } from '@/components/navigation'
 import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -78,9 +79,10 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Providers>
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-50 pb-16">
             <OfflineIndicator />
             {children}
+            <Navigation />
             <Toaster
               position="top-center"
               toastOptions={{
