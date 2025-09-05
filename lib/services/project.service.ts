@@ -5,20 +5,19 @@ export interface Project {
   id: string
   name: string
   clientName: string
+  clientEmail?: string
+  clientPhone?: string
   address: string
+  projectType: 'bathroom' | 'kitchen' | 'full_remodel'
   status: 'assessment' | 'quote_ready' | 'in_progress' | 'completed' | 'cancelled'
-  progress: number
-  estimatedStartDate?: string
-  estimatedEndDate?: string
-  actualStartDate?: string
-  actualEndDate?: string
-  budget: number
-  actualCost?: number
-  notes: string
-  assessments: string[] // Assessment IDs
-  quotes: string[] // Quote IDs
-  teamMembers: string[]
   priority: 'low' | 'medium' | 'high' | 'urgent'
+  estimatedStartDate?: string
+  estimatedCompletionDate?: string
+  actualStartDate?: string
+  actualCompletionDate?: string
+  totalBudget?: number
+  actualCost?: number
+  notes?: string
   createdAt: string
   updatedAt: string
   userId: string
@@ -41,23 +40,28 @@ class ProjectService {
   private supabase = createClient()
 
   // Create a new project
-  async createProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ project: Project; error: ProjectError | null }> {
+  async createProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'progress'>): Promise<{ project: Project | null; success: boolean; error: ProjectError | null }> {
     try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { project: null, success: false, error: { message: 'User not authenticated' } }
+      }
+
       const projectData: ProjectInsert<'projects'> = {
-        user_id: project.userId,
+        user_id: user.id,
         client_name: project.clientName,
-        client_email: null, // Will be added later
-        client_phone: null, // Will be added later
+        client_email: project.clientEmail || null,
+        client_phone: project.clientPhone || null,
         address: project.address,
-        project_type: 'bathroom', // Default, will be enhanced later
+        project_type: project.projectType,
         status: project.status,
         priority: project.priority,
         estimated_start_date: project.estimatedStartDate ? new Date(project.estimatedStartDate).toISOString() : null,
-        estimated_completion_date: project.estimatedEndDate ? new Date(project.estimatedEndDate).toISOString() : null,
+        estimated_completion_date: project.estimatedCompletionDate ? new Date(project.estimatedCompletionDate).toISOString() : null,
         actual_start_date: project.actualStartDate ? new Date(project.actualStartDate).toISOString() : null,
-        actual_completion_date: project.actualEndDate ? new Date(project.actualEndDate).toISOString() : null,
-        total_budget: project.budget,
-        notes: project.notes
+        actual_completion_date: project.actualCompletionDate ? new Date(project.actualCompletionDate).toISOString() : null,
+        total_budget: project.totalBudget || null,
+        notes: project.notes || null
       }
 
       const { data, error } = await this.supabase
@@ -68,16 +72,18 @@ class ProjectService {
 
       if (error) {
         return {
-          project: {} as Project,
+          project: null,
+          success: false,
           error: { message: error.message, code: error.code }
         }
       }
 
       const newProject = this.mapDbProjectToProject(data)
-      return { project: newProject, error: null }
+      return { project: newProject, success: true, error: null }
     } catch (error) {
       return {
-        project: {} as Project,
+        project: null,
+        success: false,
         error: { message: 'Failed to create project' }
       }
     }
@@ -332,31 +338,6 @@ class ProjectService {
     }
   }
 
-  // Update project progress
-  async updateProjectProgress(id: string, progress: number): Promise<{ success: boolean; error: ProjectError | null }> {
-    try {
-      // Auto-update status based on progress
-      let status: Project['status'] = 'in_progress'
-      if (progress >= 100) {
-        status = 'completed'
-      } else if (progress === 0) {
-        status = 'assessment'
-      }
-
-      const result = await this.updateProject(id, { progress, status })
-      
-      if (result.error) {
-        return { success: false, error: result.error }
-      }
-
-      return { success: true, error: null }
-    } catch (error) {
-      return {
-        success: false,
-        error: { message: 'Failed to update project progress' }
-      }
-    }
-  }
 
   // Add assessment to project
   async addAssessmentToProject(projectId: string, assessmentId: string): Promise<{ success: boolean; error: ProjectError | null }> {
@@ -474,20 +455,19 @@ class ProjectService {
       id: dbProject.id,
       name: dbProject.client_name, // Using client_name as name for now
       clientName: dbProject.client_name,
+      clientEmail: dbProject.client_email || undefined,
+      clientPhone: dbProject.client_phone || undefined,
       address: dbProject.address,
+      projectType: dbProject.project_type,
       status: dbProject.status,
-      progress: 0, // Will be calculated based on assessments/quotes
-      estimatedStartDate: dbProject.estimated_start_date || undefined,
-      estimatedEndDate: dbProject.estimated_completion_date || undefined,
-      actualStartDate: dbProject.actual_start_date || undefined,
-      actualEndDate: dbProject.actual_completion_date || undefined,
-      budget: dbProject.total_budget || 0,
-      actualCost: 0, // Will be calculated
-      notes: dbProject.notes || '',
-      assessments: [], // Will be populated from assessments table
-      quotes: [], // Will be populated from quotes table
-      teamMembers: [], // Will be enhanced later
       priority: dbProject.priority,
+      estimatedStartDate: dbProject.estimated_start_date || undefined,
+      estimatedCompletionDate: dbProject.estimated_completion_date || undefined,
+      actualStartDate: dbProject.actual_start_date || undefined,
+      actualCompletionDate: dbProject.actual_completion_date || undefined,
+      totalBudget: dbProject.total_budget || undefined,
+      actualCost: 0, // Will be calculated
+      notes: dbProject.notes || undefined,
       createdAt: dbProject.created_at,
       updatedAt: dbProject.updated_at,
       userId: dbProject.user_id

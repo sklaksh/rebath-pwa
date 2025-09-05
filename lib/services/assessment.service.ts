@@ -15,8 +15,8 @@ export interface FixtureData {
 
 export interface AssessmentData {
   id?: string
-  projectId: string
-  roomType: 'guest_bathroom' | 'master_bathroom' | 'kitchen' | 'other'
+  projectId: string // Required - every assessment must be tied to a project
+  roomType: string // Now dynamic - references room_types.name
   roomName: string
   fixtures: FixtureData[]
   measurements: {

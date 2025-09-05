@@ -97,12 +97,47 @@ export interface Database {
           updated_at?: string
         }
       }
+      room_types: {
+        Row: {
+          id: string
+          name: string
+          display_name: string
+          description: string | null
+          icon: string | null
+          display_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_name: string
+          description?: string | null
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_name?: string
+          description?: string | null
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
       assessments: {
         Row: {
           id: string
           project_id: string
           user_id: string
-          room_type: 'guest_bathroom' | 'master_bathroom' | 'kitchen' | 'other'
+          room_type: string
           room_name: string
           fixtures: Json
           measurements: Json
@@ -116,7 +151,7 @@ export interface Database {
           id?: string
           project_id: string
           user_id: string
-          room_type: 'guest_bathroom' | 'master_bathroom' | 'kitchen' | 'other'
+          room_type: string
           room_name: string
           fixtures: Json
           measurements: Json
@@ -130,7 +165,7 @@ export interface Database {
           id?: string
           project_id?: string
           user_id?: string
-          room_type?: 'guest_bathroom' | 'master_bathroom' | 'kitchen' | 'other'
+          room_type?: string
           room_name?: string
           fixtures?: Json
           measurements?: Json
@@ -409,3 +444,5 @@ export interface QuoteData {
   createdAt: string
   updatedAt: string
 }
+
+export type RoomType = Database['public']['Tables']['room_types']['Row']

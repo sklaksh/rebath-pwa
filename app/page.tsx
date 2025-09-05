@@ -22,36 +22,48 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ProtectedRoute } from '@/components/protected-route'
 import { useAuth } from '@/components/auth-provider'
-import { projectService } from '@/lib/services'
+import { projectService, roomService } from '@/lib/services'
 import { toast } from 'react-hot-toast'
-import type { Project } from '@/lib/services'
+import type { Project, RoomType } from '@/lib/services'
 
 function DashboardContent() {
   const router = useRouter()
   const { user, signOut } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadRecentProjects = async () => {
+    const loadData = async () => {
       try {
-        const { projects, error } = await projectService.getRecentProjects(3)
-        if (error) {
+        // Load recent projects
+        const { projects, error: projectsError } = await projectService.getRecentProjects(3)
+        if (projectsError) {
           toast.error('Failed to load recent projects')
-          console.error('Error loading projects:', error)
+          console.error('Error loading projects:', projectsError)
         } else {
           setRecentProjects(projects)
         }
+
+        // Load room types for quick actions
+        const { roomTypes: fetchedRoomTypes, error: roomTypesError } = await roomService.getRoomTypes()
+        if (roomTypesError) {
+          toast.error('Failed to load room types')
+          console.error('Error loading room types:', roomTypesError)
+        } else {
+          // Take only the first 3 room types for quick actions
+          setRoomTypes(fetchedRoomTypes.slice(0, 3))
+        }
       } catch (error) {
-        toast.error('Failed to load recent projects')
-        console.error('Error loading projects:', error)
+        toast.error('Failed to load data')
+        console.error('Error loading data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    loadRecentProjects()
+    loadData()
   }, [])
 
   const handleSignOut = async () => {
@@ -64,36 +76,38 @@ function DashboardContent() {
     }
   }
 
-  const quickActions = [
-    {
-      title: 'New Project',
-      description: 'Start a new bath remodel project',
-      icon: Plus,
-      color: 'bg-primary-500',
-      href: '/projects/new'
-    },
-    {
-      title: 'Guest Bathroom',
-      description: 'Assess guest bathroom fixtures',
-      icon: Bath,
-      color: 'bg-blue-500',
-      href: '/assessment/guest-bathroom'
-    },
-    {
-      title: 'Master Bathroom',
-      description: 'Assess master bathroom fixtures',
-      icon: Bath,
-      color: 'bg-purple-500',
-      href: '/assessment/master-bathroom'
-    },
-    {
-      title: 'Kitchen',
-      description: 'Assess kitchen fixtures',
-      icon: ChefHat,
-      color: 'bg-orange-500',
-      href: '/assessment/kitchen'
-    }
-  ]
+  const getQuickActions = () => {
+    const actions = [
+      {
+        title: 'New Project',
+        description: 'Start a new bath remodel project',
+        icon: Plus,
+        color: 'bg-primary-500',
+        href: '/projects/new'
+      },
+      {
+        title: 'All Assessments',
+        description: 'View all available room types',
+        icon: Search,
+        color: 'bg-gray-500',
+        href: '/assessment'
+      }
+    ]
+
+    // Add room type assessments (limit to 2 to keep grid balanced)
+    const colors = ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-green-500', 'bg-red-500', 'bg-indigo-500']
+    roomTypes.slice(0, 2).forEach((roomType, index) => {
+      actions.push({
+        title: roomType.displayName,
+        description: roomType.description || `Assess ${roomType.displayName.toLowerCase()} fixtures`,
+        icon: Bath, // Default icon, could be made dynamic based on roomType.icon
+        color: colors[index % colors.length],
+        href: `/assessment/${roomType.name}`
+      })
+    })
+
+    return actions
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -153,7 +167,7 @@ function DashboardContent() {
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-4">
-            {quickActions.map((action) => (
+            {getQuickActions().map((action) => (
               <Card
                 key={action.title}
                 className="p-4 cursor-pointer hover:shadow-md transition-shadow"

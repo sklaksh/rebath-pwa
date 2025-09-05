@@ -74,22 +74,10 @@
       ]
     },
     {
-      "name": "Guest Bathroom Assessment",
-      "short_name": "Guest Bath",
-      "description": "Assess guest bathroom fixtures",
-      "url": "/assessment/guest-bathroom",
-      "icons": [
-        {
-          "src": "/icons/icon-192x192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Master Bathroom Assessment",
-      "short_name": "Master Bath",
-      "description": "Assess master bathroom fixtures",
-      "url": "/assessment/master-bathroom",
+      "name": "Room Assessments",
+      "short_name": "Assessments",
+      "description": "Assess room fixtures and measurements",
+      "url": "/assessment",
       "icons": [
         {
           "src": "/icons/icon-192x192.png",
