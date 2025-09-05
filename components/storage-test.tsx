@@ -32,7 +32,7 @@ export function StorageTest() {
       const assessmentPhotosBucket = buckets.find(bucket => bucket.id === 'assessment-photos')
       if (!assessmentPhotosBucket) {
         console.error('❌ assessment-photos bucket not found')
-        toast.error('assessment-photos bucket not found. Available buckets:', buckets.map(b => b.id))
+        toast.error(`assessment-photos bucket not found. Available buckets: ${buckets.map(b => b.id).join(', ')}`)
         return
       }
       console.log('✅ assessment-photos bucket found:', assessmentPhotosBucket)

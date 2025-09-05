@@ -19,7 +19,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ProtectedRoute } from '@/components/protected-route'
-import { pricingService, type CalculatorPricingData, type FixtureOption, type SelectedFixture } from '@/lib/services'
+import { pricingService, type CalculatorPricingData, type SelectedFixture } from '@/lib/services'
+import type { FixtureOption } from '@/lib/services/pricing.service'
 import { toast } from 'react-hot-toast'
 
 function PricingCalculatorContent() {

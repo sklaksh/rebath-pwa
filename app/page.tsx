@@ -12,7 +12,8 @@ import {
   Search,
   Filter,
   LogOut,
-  Loader2
+  Loader2,
+  Plus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'

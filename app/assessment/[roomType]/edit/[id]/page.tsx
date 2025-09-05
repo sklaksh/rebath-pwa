@@ -99,7 +99,7 @@ function EditAssessmentContent() {
     const loadAssessment = async () => {
       try {
         const { assessment, error } = await assessmentService.getAssessment(assessmentId)
-        if (error) {
+        if (error || !assessment) {
           toast.error('Assessment not found')
           router.back()
           return

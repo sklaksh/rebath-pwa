@@ -206,11 +206,13 @@ function NewProjectContent() {
 
     try {
       const projectData = {
+        name: formData.clientName, // Using client name as project name
         clientName: formData.clientName,
         clientEmail: formData.clientEmail || undefined,
         clientPhone: formData.clientPhone || undefined,
         address: formData.address,
         projectType: formData.projectType as 'bathroom' | 'kitchen' | 'full_remodel',
+        status: 'assessment' as const,
         priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
         estimatedStartDate: formData.estimatedStartDate || undefined,
         estimatedCompletionDate: formData.estimatedCompletionDate || undefined,

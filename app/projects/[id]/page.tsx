@@ -19,9 +19,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ProtectedRoute } from '@/components/protected-route'
-import { projectService, roomService, assessmentService } from '@/lib/services'
+import { projectService, roomService, assessmentService, quoteService } from '@/lib/services'
 import { toast } from 'react-hot-toast'
-import type { Project, RoomType, AssessmentData } from '@/lib/services'
+import type { Project, RoomType, AssessmentData, QuoteData } from '@/lib/services'
 
 function ProjectDetailContent() {
   const router = useRouter()
@@ -31,6 +31,7 @@ function ProjectDetailContent() {
   const [project, setProject] = useState<Project | null>(null)
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
   const [assessments, setAssessments] = useState<AssessmentData[]>([])
+  const [quotes, setQuotes] = useState<QuoteData[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -61,6 +62,15 @@ function ProjectDetailContent() {
           // Don't show error toast for assessments as they might not exist yet
         } else {
           setAssessments(fetchedAssessments)
+        }
+
+        // Load quotes for this project
+        const { quotes: fetchedQuotes, error: quotesError } = await quoteService.getQuotesByProject(projectId)
+        if (quotesError) {
+          console.error('Error loading quotes:', quotesError)
+          // Don't show error toast for quotes as they might not exist yet
+        } else {
+          setQuotes(fetchedQuotes)
         }
       } catch (error) {
         toast.error('Failed to load data')
@@ -140,6 +150,23 @@ function ProjectDetailContent() {
       case 'reviewed':
         return 'bg-blue-100 text-blue-800'
       case 'draft':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getQuoteStatusColor = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'bg-gray-100 text-gray-800'
+      case 'sent':
+        return 'bg-blue-100 text-blue-800'
+      case 'accepted':
+        return 'bg-green-100 text-green-800'
+      case 'rejected':
+        return 'bg-red-100 text-red-800'
+      case 'expired':
         return 'bg-yellow-100 text-yellow-800'
       default:
         return 'bg-gray-100 text-gray-800'
@@ -386,6 +413,80 @@ function ProjectDetailContent() {
           </CardContent>
         </Card>
 
+        {/* Project Quotes */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Project Quotes</span>
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline">
+                  {quotes.length} quote{quotes.length !== 1 ? 's' : ''}
+                </Badge>
+                <Button
+                  size="sm"
+                  onClick={() => router.push(`/projects/${projectId}/quote/new`)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Quote
+                </Button>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {quotes.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-4">
+                  <DollarSign className="h-12 w-12 mx-auto" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No quotes yet</h3>
+                <p className="text-gray-600 mb-4">
+                  Create a quote to provide pricing for this project.
+                </p>
+                <Button
+                  onClick={() => router.push(`/projects/${projectId}/quote/new`)}
+                >
+                  Create First Quote
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {quotes.map((quote) => (
+                  <div
+                    key={quote.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/projects/${projectId}/quote/${quote.id}`)}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h4 className="font-medium text-gray-900">{quote.quoteNumber}</h4>
+                        <Badge className={getQuoteStatusColor(quote.status)}>
+                          {quote.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {quote.items.length} items • Valid until {new Date(quote.validUntil).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Created {new Date(quote.createdAt!).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-semibold text-gray-900">
+                        ${quote.total.toFixed(2)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {quote.status === 'accepted' ? 'Accepted' : 
+                         quote.status === 'sent' ? 'Sent to Client' :
+                         quote.status === 'draft' ? 'Draft' : quote.status}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Quick Actions */}
         <Card>
           <CardHeader>
@@ -412,6 +513,14 @@ function ProjectDetailContent() {
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Other Actions</h4>
                 <div className="grid grid-cols-1 gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push(`/projects/${projectId}/quote/new`)}
+                    className="h-auto p-4 flex flex-col items-center space-y-2"
+                  >
+                    <DollarSign className="h-6 w-6" />
+                    <span>Create Quote</span>
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={() => router.push('/calculator')}

@@ -18,6 +18,7 @@ export interface Project {
   totalBudget?: number
   actualCost?: number
   notes?: string
+  progress: number
   createdAt: string
   updatedAt: string
   userId: string
@@ -467,6 +468,18 @@ class ProjectService {
 
   // Map database project to application project
   private mapDbProjectToProject(dbProject: DbProject): Project {
+    // Calculate progress based on status
+    const getProgressFromStatus = (status: string): number => {
+      switch (status) {
+        case 'assessment': return 10
+        case 'quote_ready': return 30
+        case 'in_progress': return 60
+        case 'completed': return 100
+        case 'cancelled': return 0
+        default: return 0
+      }
+    }
+
     return {
       id: dbProject.id,
       name: dbProject.client_name, // Using client_name as name for now
@@ -484,6 +497,7 @@ class ProjectService {
       totalBudget: dbProject.total_budget || undefined,
       actualCost: 0, // Will be calculated
       notes: dbProject.notes || undefined,
+      progress: getProgressFromStatus(dbProject.status),
       createdAt: dbProject.created_at,
       updatedAt: dbProject.updated_at,
       userId: dbProject.user_id
