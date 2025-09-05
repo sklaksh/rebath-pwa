@@ -196,7 +196,11 @@ function ProjectDetailContent() {
               </div>
             </div>
           </div>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => router.push(`/projects/${projectId}/edit`)}
+          >
             <Edit className="h-4 w-4 mr-2" />
             Edit
           </Button>

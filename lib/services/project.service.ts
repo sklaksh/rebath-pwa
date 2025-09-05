@@ -149,23 +149,39 @@ class ProjectService {
   // Update a project
   async updateProject(id: string, updates: Partial<Project>): Promise<{ project: Project | null; error: ProjectError | null }> {
     try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { project: null, error: { message: 'User not authenticated' } }
+      }
+
       const updateData: ProjectUpdate<'projects'> = {}
       
-      if (updates.clientName) updateData.client_name = updates.clientName
-      if (updates.address) updateData.address = updates.address
-      if (updates.status) updateData.status = updates.status
-      if (updates.priority) updateData.priority = updates.priority
-      if (updates.estimatedStartDate) updateData.estimated_start_date = new Date(updates.estimatedStartDate).toISOString()
-      if (updates.estimatedEndDate) updateData.estimated_completion_date = new Date(updates.estimatedEndDate).toISOString()
-      if (updates.actualStartDate) updateData.actual_start_date = new Date(updates.actualStartDate).toISOString()
-      if (updates.actualEndDate) updateData.actual_completion_date = new Date(updates.actualEndDate).toISOString()
-      if (updates.budget) updateData.total_budget = updates.budget
-      if (updates.notes) updateData.notes = updates.notes
+      // Client information
+      if (updates.clientName !== undefined) updateData.client_name = updates.clientName
+      if (updates.clientEmail !== undefined) updateData.client_email = updates.clientEmail || null
+      if (updates.clientPhone !== undefined) updateData.client_phone = updates.clientPhone || null
+      
+      // Project details
+      if (updates.address !== undefined) updateData.address = updates.address
+      if (updates.projectType !== undefined) updateData.project_type = updates.projectType
+      if (updates.status !== undefined) updateData.status = updates.status
+      if (updates.priority !== undefined) updateData.priority = updates.priority
+      
+      // Dates
+      if (updates.estimatedStartDate !== undefined) updateData.estimated_start_date = updates.estimatedStartDate ? new Date(updates.estimatedStartDate).toISOString() : null
+      if (updates.estimatedCompletionDate !== undefined) updateData.estimated_completion_date = updates.estimatedCompletionDate ? new Date(updates.estimatedCompletionDate).toISOString() : null
+      if (updates.actualStartDate !== undefined) updateData.actual_start_date = updates.actualStartDate ? new Date(updates.actualStartDate).toISOString() : null
+      if (updates.actualCompletionDate !== undefined) updateData.actual_completion_date = updates.actualCompletionDate ? new Date(updates.actualCompletionDate).toISOString() : null
+      
+      // Budget and notes
+      if (updates.totalBudget !== undefined) updateData.total_budget = updates.totalBudget || null
+      if (updates.notes !== undefined) updateData.notes = updates.notes || null
 
       const { data, error } = await this.supabase
         .from('projects')
         .update(updateData)
         .eq('id', id)
+        .eq('user_id', user.id)
         .select()
         .single()
 
