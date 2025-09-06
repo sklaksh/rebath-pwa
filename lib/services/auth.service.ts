@@ -32,8 +32,7 @@ class AuthService {
         password: data.password,
         options: {
           data: {
-            full_name: data.fullName,
-            role: 'employee'
+            full_name: data.fullName
           }
         }
       })
@@ -173,18 +172,24 @@ class AuthService {
 
   async getUserProfile(userId: string): Promise<{ profile: Profile | null; error: AuthError | null }> {
     try {
+      console.log('Fetching profile for user ID:', userId)
       const { data: profile, error } = await this.supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
 
+      console.log('Profile query result:', { profile, error })
+
       if (error) {
+        console.error('Profile fetch error:', error)
         return { profile: null, error: { message: error.message } }
       }
 
+      console.log('Profile data:', profile)
       return { profile, error: null }
     } catch (error) {
+      console.error('Profile fetch exception:', error)
       return { profile: null, error: { message: 'An unexpected error occurred' } }
     }
   }
@@ -209,8 +214,130 @@ class AuthService {
   }
 
   private async getUserWithProfile(user: User): Promise<AuthUser> {
-    const { profile } = await this.getUserProfile(user.id)
+    console.log('Getting profile for user:', user.id)
+    const { profile, error } = await this.getUserProfile(user.id)
+    console.log('Profile result:', { profile, error })
     return { ...user, profile: profile || undefined }
+  }
+
+  // Check if current user is admin
+  async isAdmin(): Promise<boolean> {
+    try {
+      const { user } = await this.getCurrentUser()
+      console.log('isAdmin check - user:', user?.id, 'profile:', user?.profile)
+      return user?.profile?.role === 'admin'
+    } catch (error) {
+      console.error('Error in isAdmin:', error)
+      return false
+    }
+  }
+
+  // Force refresh user profile (useful after role changes)
+  async refreshUserProfile(): Promise<{ user: AuthUser | null; error: AuthError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { user: null, error: { message: 'No authenticated user' } }
+      }
+
+      // Force fetch fresh profile data
+      const { profile, error } = await this.getUserProfile(user.id)
+      if (error) {
+        return { user: null, error }
+      }
+
+      const userWithProfile = { ...user, profile: profile || undefined }
+      return { user: userWithProfile, error: null }
+    } catch (error) {
+      return { user: null, error: { message: 'Failed to refresh user profile' } }
+    }
+  }
+
+  // Get all users (admin only)
+  async getAllUsers(): Promise<{ users: any[]; error: AuthError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { users: [], error: { message: 'Not authenticated' } }
+      }
+
+      // Check if user is admin
+      const { profile } = await this.getUserProfile(user.id)
+      if (profile?.role !== 'admin') {
+        return { users: [], error: { message: 'Admin access required' } }
+      }
+
+      const { data: profiles, error } = await this.supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        return { users: [], error: { message: error.message } }
+      }
+
+      return { users: profiles || [], error: null }
+    } catch (error) {
+      return { users: [], error: { message: 'An unexpected error occurred' } }
+    }
+  }
+
+  // Approve user (admin only)
+  async approveUser(userId: string): Promise<{ success: boolean; error: AuthError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: { message: 'Not authenticated' } }
+      }
+
+      // Check if user is admin
+      const { profile } = await this.getUserProfile(user.id)
+      if (profile?.role !== 'admin') {
+        return { success: false, error: { message: 'Admin access required' } }
+      }
+
+      const { error } = await this.supabase
+        .from('profiles')
+        .update({ approved: true })
+        .eq('id', userId)
+
+      if (error) {
+        return { success: false, error: { message: error.message } }
+      }
+
+      return { success: true, error: null }
+    } catch (error) {
+      return { success: false, error: { message: 'An unexpected error occurred' } }
+    }
+  }
+
+  // Make user admin (admin only)
+  async makeAdmin(userId: string): Promise<{ success: boolean; error: AuthError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: { message: 'Not authenticated' } }
+      }
+
+      // Check if user is admin
+      const { profile } = await this.getUserProfile(user.id)
+      if (profile?.role !== 'admin') {
+        return { success: false, error: { message: 'Admin access required' } }
+      }
+
+      const { error } = await this.supabase
+        .from('profiles')
+        .update({ role: 'admin' })
+        .eq('id', userId)
+
+      if (error) {
+        return { success: false, error: { message: error.message } }
+      }
+
+      return { success: true, error: null }
+    } catch (error) {
+      return { success: false, error: { message: 'An unexpected error occurred' } }
+    }
   }
 
   onAuthStateChange(callback: (event: string, session: Session | null) => void) {

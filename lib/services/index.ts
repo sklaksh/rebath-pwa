@@ -9,6 +9,8 @@ export { quoteService } from './quote.service'
 export { fixtureService } from './fixture.service'
 export { pdfService } from './pdf.service'
 export { jobWorkService } from './job-work.service'
+export { fixtureCategoryService } from './fixture-category.service'
+export { fixtureOptionService } from './fixture-option.service'
 
 // Export types
 export type {
@@ -59,3 +61,15 @@ export type {
   UpdateJobWorkItemData,
   JobWorkError
 } from './job-work.service'
+
+export type {
+  FixtureCategoryError,
+  CreateFixtureCategoryData,
+  UpdateFixtureCategoryData
+} from './fixture-category.service'
+
+export type {
+  FixtureOptionError,
+  CreateFixtureOptionData,
+  UpdateFixtureOptionData
+} from './fixture-option.service'

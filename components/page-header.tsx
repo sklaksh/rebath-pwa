@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Home, FolderOpen } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ArrowLeft, Home, FolderOpen, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { authService } from '@/lib/services'
 
 interface PageHeaderProps {
   title: string
@@ -19,6 +21,21 @@ export function PageHeader({
   backHref 
 }: PageHeaderProps) {
   const router = useRouter()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  const checkAdminStatus = async () => {
+    try {
+      const adminStatus = await authService.isAdmin()
+      setIsAdmin(adminStatus)
+    } catch (error) {
+      console.error('Error checking admin status:', error)
+      setIsAdmin(false)
+    }
+  }
+
+  useEffect(() => {
+    checkAdminStatus()
+  }, [])
 
   const handleBack = () => {
     if (backHref) {
@@ -57,6 +74,13 @@ export function PageHeader({
                 <FolderOpen className="h-4 w-4" />
               </Button>
             </Link>
+            {isAdmin && (
+              <Link href="/admin">
+                <Button variant="ghost" size="sm" className="p-2">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </Link>
+            )}
           </div>
         )}
       </div>

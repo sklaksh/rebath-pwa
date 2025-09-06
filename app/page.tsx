@@ -21,13 +21,14 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ProtectedRoute } from '@/components/protected-route'
 import { useAuth } from '@/components/auth-provider'
-import { projectService } from '@/lib/services'
+import { projectService, authService } from '@/lib/services'
 import { toast } from 'react-hot-toast'
 import type { Project } from '@/lib/services'
 
 function DashboardContent() {
   const router = useRouter()
   const { user, signOut } = useAuth()
+  const [isAdmin, setIsAdmin] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
@@ -42,6 +43,16 @@ function DashboardContent() {
           console.error('Error loading projects:', projectsError)
         } else {
           setRecentProjects(projects)
+        }
+
+        // Check admin status
+        try {
+          const adminStatus = await authService.isAdmin()
+          setIsAdmin(adminStatus)
+          console.log('Home page admin status:', adminStatus)
+        } catch (error) {
+          console.error('Error checking admin status:', error)
+          setIsAdmin(false)
         }
 
       } catch (error) {
@@ -116,6 +127,21 @@ function DashboardContent() {
             )}
           </div>
           <div className="flex items-center space-x-2">
+            {/* Admin Test */}
+            <span className={`text-xs px-2 py-1 rounded ${isAdmin ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+              {isAdmin ? 'ADMIN' : 'USER'}
+            </span>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/admin')}
+                className="text-blue-600"
+              >
+                <Settings className="h-4 w-4 mr-1" />
+                Admin
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -238,6 +264,7 @@ function DashboardContent() {
             </Card>
           </div>
         </div>
+
       </div>
 
     </div>

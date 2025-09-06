@@ -15,7 +15,8 @@ export interface Database {
           email: string
           full_name: string | null
           avatar_url: string | null
-          role: 'admin' | 'employee' | 'manager'
+          role: 'admin' | 'user'
+          approved: boolean
           created_at: string
           updated_at: string
         }
@@ -24,7 +25,8 @@ export interface Database {
           email: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: 'admin' | 'employee' | 'manager'
+          role?: 'admin' | 'user'
+          approved?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -33,7 +35,8 @@ export interface Database {
           email?: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: 'admin' | 'employee' | 'manager'
+          role?: 'admin' | 'user'
+          approved?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -242,6 +245,7 @@ export interface Database {
           description: string | null
           display_order: number
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -249,6 +253,7 @@ export interface Database {
           description?: string | null
           display_order?: number
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -256,6 +261,7 @@ export interface Database {
           description?: string | null
           display_order?: number
           created_at?: string
+          updated_at?: string
         }
       }
       fixture_options: {
