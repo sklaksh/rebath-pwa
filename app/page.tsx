@@ -36,13 +36,14 @@ function DashboardContent() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load recent projects
-        const { projects, error: projectsError } = await projectService.getRecentProjects(3)
+        // Load recent projects (all projects for admin, user's projects for regular users)
+        const { projects, error: projectsError } = await projectService.getProjects()
         if (projectsError) {
-          toast.error('Failed to load recent projects')
+          toast.error('Failed to load projects')
           console.error('Error loading projects:', projectsError)
         } else {
-          setRecentProjects(projects)
+          // Take the first 3 projects for the dashboard
+          setRecentProjects(projects.slice(0, 3))
         }
 
         // Check admin status
@@ -214,6 +215,11 @@ function DashboardContent() {
                         <span className="text-sm text-gray-500">
                           {new Date(project.updatedAt).toLocaleDateString()}
                         </span>
+                        {isAdmin && project.userFullName && (
+                          <span className="text-xs text-gray-400">
+                            by {project.userFullName}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">

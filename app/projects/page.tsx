@@ -18,7 +18,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ProtectedRoute } from '@/components/protected-route'
-import { projectService } from '@/lib/services'
+import { projectService, authService } from '@/lib/services'
 import { toast } from 'react-hot-toast'
 import type { Project } from '@/lib/services'
 
@@ -49,10 +49,15 @@ function ProjectsContent() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const loadProjects = async () => {
       try {
+        // Check admin status
+        const adminStatus = await authService.isAdmin()
+        setIsAdmin(adminStatus)
+
         const { projects: fetchedProjects, error } = await projectService.getProjects()
         if (error) {
           toast.error('Failed to load projects')
@@ -123,7 +128,9 @@ function ProjectsContent() {
             </Button>
             <div>
               <h1 className="text-lg font-semibold text-gray-900">Projects</h1>
-              <p className="text-sm text-gray-500">{filteredProjects.length} projects</p>
+              <p className="text-sm text-gray-500">
+                {isAdmin ? `Admin View - ${filteredProjects.length} of ${projects.length} projects` : `${filteredProjects.length} projects`}
+              </p>
             </div>
           </div>
           <Button
@@ -220,6 +227,14 @@ function ProjectsContent() {
                           <Calendar className="h-4 w-4" />
                           <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
                         </div>
+                        {isAdmin && project.userFullName && (
+                          <div className="flex items-center space-x-2">
+                            <User className="h-4 w-4" />
+                            <span className="text-xs text-gray-500">
+                              Project Owner: {project.userFullName}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">

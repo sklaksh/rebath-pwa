@@ -22,6 +22,9 @@ export interface Project {
   createdAt: string
   updatedAt: string
   userId: string
+  // Admin view fields
+  userFullName?: string
+  userEmail?: string
 }
 
 export interface ProjectError {
@@ -48,8 +51,16 @@ class ProjectService {
         return { project: null, success: false, error: { message: 'User not authenticated' } }
       }
 
+      // Get the current user's name for the project
+      const { data: userProfile } = await this.supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single()
+
       const projectData: ProjectInsert<'projects'> = {
         user_id: user.id,
+        user_name: userProfile?.full_name || userProfile?.email || 'Unknown User',
         client_name: project.clientName,
         client_email: project.clientEmail || null,
         client_phone: project.clientPhone || null,
@@ -90,7 +101,7 @@ class ProjectService {
     }
   }
 
-  // Get all projects for the current user
+  // Get all projects for the current user (or all projects if admin)
   async getProjects(): Promise<{ projects: Project[]; error: ProjectError | null }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser()
@@ -98,11 +109,33 @@ class ProjectService {
         return { projects: [], error: { message: 'User not authenticated' } }
       }
 
-      const { data, error } = await this.supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+      // Check if user is admin
+      const { data: profile, error: profileError } = await this.supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      const isAdmin = profile?.role === 'admin'
+
+      let query
+      
+      if (isAdmin) {
+        // For admin users, get all projects
+        query = this.supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false })
+      } else {
+        // For regular users, only show their own projects
+        query = this.supabase
+          .from('projects')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+      }
+
+      const { data, error } = await query
 
       if (error) {
         return {
@@ -117,6 +150,53 @@ class ProjectService {
       return {
         projects: [],
         error: { message: 'Failed to fetch projects' }
+      }
+    }
+  }
+
+  // Get all projects (admin only)
+  async getAllProjects(): Promise<{ projects: Project[]; error: ProjectError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { projects: [], error: { message: 'User not authenticated' } }
+      }
+
+      // Check if user is admin
+      const { data: profile } = await this.supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role !== 'admin') {
+        return { projects: [], error: { message: 'Admin access required' } }
+      }
+
+      const { data, error } = await this.supabase
+        .from('projects')
+        .select(`
+          *,
+          profiles!projects_user_id_fkey (
+            full_name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        return {
+          projects: [],
+          error: { message: error.message, code: error.code }
+        }
+      }
+
+      const projects = data.map(this.mapDbProjectToProjectWithUser)
+      return { projects, error: null }
+    } catch (error) {
+      return {
+        projects: [],
+        error: { message: 'Failed to fetch all projects' }
       }
     }
   }
@@ -524,7 +604,38 @@ class ProjectService {
       notes: dbProject.notes || undefined,
       createdAt: dbProject.created_at,
       updatedAt: dbProject.updated_at,
-      userId: dbProject.user_id
+      userId: dbProject.user_id,
+      userFullName: dbProject.user_name || 'Unknown User',
+      userEmail: 'N/A' // We'll get this from the user's own profile if needed
+    }
+  }
+
+  // Map database project with user info to application project (for admin view)
+  private mapDbProjectToProjectWithUser(dbProject: any): Project {
+    return {
+      id: dbProject.id,
+      name: dbProject.client_name,
+      clientName: dbProject.client_name,
+      clientEmail: dbProject.client_email || undefined,
+      clientPhone: dbProject.client_phone || undefined,
+      address: dbProject.address,
+      projectType: dbProject.project_type,
+      status: dbProject.status,
+      priority: dbProject.priority,
+      estimatedStartDate: dbProject.estimated_start_date || undefined,
+      estimatedCompletionDate: dbProject.estimated_completion_date || undefined,
+      actualStartDate: dbProject.actual_start_date || undefined,
+      actualCompletionDate: dbProject.actual_completion_date || undefined,
+      totalBudget: dbProject.total_budget || undefined,
+      actualCost: 0, // Will be calculated
+      jobDescription: dbProject.job_description || undefined,
+      notes: dbProject.notes || undefined,
+      createdAt: dbProject.created_at,
+      updatedAt: dbProject.updated_at,
+      userId: dbProject.user_id,
+      // Admin view fields
+      userFullName: dbProject.profiles?.full_name || 'Unknown User',
+      userEmail: dbProject.profiles?.email || 'No email'
     }
   }
 }
