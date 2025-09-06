@@ -28,6 +28,7 @@ import { projectService, roomService, assessmentService, quoteService } from '@/
 import { toast } from 'react-hot-toast'
 import type { Project, RoomType, AssessmentData, QuoteData } from '@/lib/services'
 import { JobWorkItems } from '@/components/job-work-items'
+import { ProjectSharing } from '@/components/project-sharing'
 
 function ProjectDetailContent() {
   const router = useRouter()
@@ -39,6 +40,8 @@ function ProjectDetailContent() {
   const [assessments, setAssessments] = useState<AssessmentData[]>([])
   const [quotes, setQuotes] = useState<QuoteData[]>([])
   const [loading, setLoading] = useState(true)
+  const [isOwner, setIsOwner] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,6 +54,20 @@ function ProjectDetailContent() {
           return
         }
         setProject(fetchedProject)
+
+        // Check if current user is owner or admin
+        const { data: { user } } = await (projectService as any).supabase.auth.getUser()
+        if (user && fetchedProject) {
+          setIsOwner(user.id === fetchedProject.userId)
+          
+          // Check if user is admin
+          const { data: profile } = await (projectService as any).supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+          setIsAdmin(profile?.role === 'admin')
+        }
 
         // Load room types
         const { roomTypes: fetchedRoomTypes, error: roomTypesError } = await roomService.getRoomTypes()
@@ -641,6 +658,13 @@ function ProjectDetailContent() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Project Sharing */}
+        <ProjectSharing 
+          projectId={projectId} 
+          isOwner={isOwner} 
+          isAdmin={isAdmin} 
+        />
       </div>
     </div>
   )

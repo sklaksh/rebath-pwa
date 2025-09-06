@@ -106,6 +106,38 @@ export interface Database {
           updated_at?: string
         }
       }
+      project_permissions: {
+        Row: {
+          id: string
+          project_id: string
+          user_id: string
+          permission_type: 'view' | 'edit' | 'admin'
+          granted_by: string
+          granted_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          user_id: string
+          permission_type?: 'view' | 'edit' | 'admin'
+          granted_by: string
+          granted_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          user_id?: string
+          permission_type?: 'view' | 'edit' | 'admin'
+          granted_by?: string
+          granted_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
       room_types: {
         Row: {
           id: string

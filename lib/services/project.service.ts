@@ -101,7 +101,7 @@ class ProjectService {
     }
   }
 
-  // Get all projects for the current user (or all projects if admin)
+  // Get all projects for the current user (including shared projects)
   async getProjects(): Promise<{ projects: Project[]; error: ProjectError | null }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser()
@@ -127,11 +127,14 @@ class ProjectService {
           .select('*')
           .order('created_at', { ascending: false })
       } else {
-        // For regular users, only show their own projects
+        // For regular users, get their own projects + shared projects
         query = this.supabase
           .from('projects')
-          .select('*')
-          .eq('user_id', user.id)
+          .select(`
+            *,
+            project_permissions!inner(permission_type)
+          `)
+          .or(`user_id.eq.${user.id},project_permissions.user_id.eq.${user.id}`)
           .order('created_at', { ascending: false })
       }
 
@@ -447,6 +450,177 @@ class ProjectService {
   async addQuoteToProject(projectId: string, quoteId: string): Promise<{ success: boolean; error: ProjectError | null }> {
     // This will be implemented when we have the quotes table properly linked
     return { success: true, error: null }
+  }
+
+  // Share project with another user
+  async shareProject(projectId: string, userId: string, permissionType: 'view' | 'edit' | 'admin' = 'view'): Promise<{ success: boolean; error: ProjectError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: { message: 'User not authenticated' } }
+      }
+
+      // Check if user has permission to share this project
+      const { data: project } = await this.supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single()
+
+      if (!project) {
+        return { success: false, error: { message: 'Project not found' } }
+      }
+
+      // Check if user is project owner or admin
+      const { data: profile } = await this.supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      const isProjectOwner = project.user_id === user.id
+      const isAdmin = profile?.role === 'admin'
+
+      if (!isProjectOwner && !isAdmin) {
+        return { success: false, error: { message: 'You do not have permission to share this project' } }
+      }
+
+      // Grant permission
+      const { error } = await this.supabase
+        .from('project_permissions')
+        .upsert({
+          project_id: projectId,
+          user_id: userId,
+          permission_type: permissionType,
+          granted_by: user.id
+        })
+
+      if (error) {
+        return { success: false, error: { message: error.message, code: error.code } }
+      }
+
+      return { success: true, error: null }
+    } catch (error) {
+      return { success: false, error: { message: 'Failed to share project' } }
+    }
+  }
+
+  // Revoke project access from a user
+  async revokeProjectAccess(projectId: string, userId: string): Promise<{ success: boolean; error: ProjectError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: { message: 'User not authenticated' } }
+      }
+
+      // Check if user has permission to revoke access
+      const { data: project } = await this.supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single()
+
+      if (!project) {
+        return { success: false, error: { message: 'Project not found' } }
+      }
+
+      // Check if user is project owner or admin
+      const { data: profile } = await this.supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      const isProjectOwner = project.user_id === user.id
+      const isAdmin = profile?.role === 'admin'
+
+      if (!isProjectOwner && !isAdmin) {
+        return { success: false, error: { message: 'You do not have permission to revoke access to this project' } }
+      }
+
+      // Revoke permission
+      const { error } = await this.supabase
+        .from('project_permissions')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+
+      if (error) {
+        return { success: false, error: { message: error.message, code: error.code } }
+      }
+
+      return { success: true, error: null }
+    } catch (error) {
+      return { success: false, error: { message: 'Failed to revoke project access' } }
+    }
+  }
+
+  // Get project permissions (who has access to a project)
+  async getProjectPermissions(projectId: string): Promise<{ permissions: any[]; error: ProjectError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { permissions: [], error: { message: 'User not authenticated' } }
+      }
+
+      // Check if user has permission to view project permissions
+      const { data: project } = await this.supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single()
+
+      if (!project) {
+        return { permissions: [], error: { message: 'Project not found' } }
+      }
+
+      // Check if user is project owner or admin
+      const { data: profile } = await this.supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      const isProjectOwner = project.user_id === user.id
+      const isAdmin = profile?.role === 'admin'
+
+      if (!isProjectOwner && !isAdmin) {
+        return { permissions: [], error: { message: 'You do not have permission to view project permissions' } }
+      }
+
+      // Get permissions
+      const { data: permissionsData, error } = await this.supabase
+        .from('project_permissions')
+        .select('*')
+        .eq('project_id', projectId)
+
+      if (error) {
+        return { permissions: [], error: { message: error.message, code: error.code } }
+      }
+
+      // Get user details separately
+      const userIds = permissionsData?.map(p => p.user_id) || []
+      let userProfiles: any[] = []
+      
+      if (userIds.length > 0) {
+        const { data: profilesData } = await this.supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds)
+        
+        userProfiles = profilesData || []
+      }
+
+      // Combine permissions with user details
+      const data = permissionsData?.map(permission => ({
+        ...permission,
+        profiles: userProfiles.find(profile => profile.id === permission.user_id)
+      })) || []
+
+      return { permissions: data, error: null }
+    } catch (error) {
+      return { permissions: [], error: { message: 'Failed to fetch project permissions' } }
+    }
   }
 
   // Get project statistics

@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/page-header'
 import { ProtectedRoute } from '@/components/protected-route'
+import { DeleteConfirmation } from '@/components/delete-confirmation'
 import { projectService } from '@/lib/services'
 import type { Project } from '@/lib/services'
 
@@ -19,6 +20,7 @@ function EditProjectContent() {
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [formData, setFormData] = useState({
     clientName: '',
     clientEmail: '',
@@ -141,6 +143,26 @@ function EditProjectContent() {
       toast.error('An unexpected error occurred')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDeleteProject = async () => {
+    setSaving(true)
+    try {
+      const { success, error } = await projectService.deleteProject(projectId)
+      
+      if (error) {
+        toast.error(`Failed to delete project: ${error.message}`)
+      } else if (success) {
+        toast.success('Project deleted successfully!')
+        router.push('/projects')
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      toast.error('An unexpected error occurred')
+    } finally {
+      setSaving(false)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -397,21 +419,41 @@ function EditProjectContent() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-end space-x-3">
+        <div className="flex justify-between items-center">
           <Button
-            variant="outline"
-            onClick={() => router.back()}
+            variant="destructive"
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={saving}
           >
-            Cancel
+            Delete Project
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          <div className="flex space-x-3">
+            <Button
+              variant="outline"
+              onClick={() => router.back()}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmation
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDeleteProject}
+          title="Delete Project"
+          description="This action cannot be undone. This will permanently delete the project and all associated data."
+          itemName="Project"
+          loading={saving}
+        />
       </div>
     </div>
   )
