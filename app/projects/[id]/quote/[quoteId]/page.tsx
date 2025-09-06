@@ -159,6 +159,23 @@ function QuoteDetailContent() {
     }
   }
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!quote) return
+    
+    try {
+      const { success, error } = await quoteService.updateQuoteStatus(quote.id!, newStatus)
+      if (error) {
+        toast.error(`Failed to update status: ${error.message}`)
+      } else {
+        toast.success(`Quote status updated to ${newStatus}`)
+        setQuote(prev => prev ? { ...prev, status: newStatus } : null)
+      }
+    } catch (error) {
+      console.error('Error updating quote status:', error)
+      toast.error('An unexpected error occurred')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -200,9 +217,17 @@ function QuoteDetailContent() {
               <div>
                 <CardTitle className="flex items-center space-x-3">
                   <span>Quote {quote.quoteNumber}</span>
-                  <Badge className={getStatusColor(quote.status)}>
-                    {quote.status.replace('_', ' ')}
-                  </Badge>
+                  <select
+                    value={quote.status}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="expired">Expired</option>
+                  </select>
                 </CardTitle>
                 <p className="text-sm text-gray-600 mt-1">
                   Created {new Date(quote.createdAt!).toLocaleDateString()}

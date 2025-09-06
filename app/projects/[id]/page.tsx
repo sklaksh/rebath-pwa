@@ -14,7 +14,11 @@ import {
   Plus,
   FileText,
   Calculator,
-  Play
+  Play,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Send
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -113,6 +117,17 @@ function ProjectDetailContent() {
       case 'completed': return 'Completed'
       case 'cancelled': return 'Cancelled'
       default: return status
+    }
+  }
+
+  const getQuoteStatusIcon = (status: string) => {
+    switch (status) {
+      case 'accepted': return <CheckCircle className="w-4 h-4" />
+      case 'rejected': return <XCircle className="w-4 h-4" />
+      case 'sent': return <Send className="w-4 h-4" />
+      case 'draft': return <FileText className="w-4 h-4" />
+      case 'expired': return <Clock className="w-4 h-4" />
+      default: return <FileText className="w-4 h-4" />
     }
   }
 
@@ -475,7 +490,14 @@ function ProjectDetailContent() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Project Quotes</span>
+              <div className="flex items-center space-x-2">
+                <span>Project Quotes</span>
+                {quotes.some(quote => quote.status === 'accepted') && (
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                    ✓ Has Approved Quote
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline">
                   {quotes.length} quote{quotes.length !== 1 ? 's' : ''}
@@ -511,31 +533,58 @@ function ProjectDetailContent() {
                 {quotes.map((quote) => (
                   <div
                     key={quote.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer ${
+                      quote.status === 'accepted' 
+                        ? 'border-green-300 bg-green-50' 
+                        : 'border-gray-200'
+                    }`}
                     onClick={() => router.push(`/projects/${projectId}/quote/${quote.id}`)}
                   >
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
-                        <h4 className="font-medium text-gray-900">{quote.quoteNumber}</h4>
-                        <Badge className={getQuoteStatusColor(quote.status)}>
-                          {quote.status.replace('_', ' ')}
+                        <h4 className={`font-medium ${
+                          quote.status === 'accepted' ? 'text-green-900' : 'text-gray-900'
+                        }`}>
+                          {quote.quoteNumber}
+                        </h4>
+                        <Badge className={`${getQuoteStatusColor(quote.status)} flex items-center space-x-1`}>
+                          {getQuoteStatusIcon(quote.status)}
+                          <span>{quote.status.replace('_', ' ')}</span>
                         </Badge>
+                        {quote.status === 'accepted' && (
+                          <Badge className="bg-green-100 text-green-800 border-green-200">
+                            ✓ Approved
+                          </Badge>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className={`text-sm ${
+                        quote.status === 'accepted' ? 'text-green-700' : 'text-gray-600'
+                      }`}>
                         {quote.items.length} items • Valid until {new Date(quote.validUntil).toLocaleDateString()}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className={`text-xs ${
+                        quote.status === 'accepted' ? 'text-green-600' : 'text-gray-500'
+                      }`}>
                         Created {new Date(quote.createdAt!).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className={`text-lg font-semibold ${
+                        quote.status === 'accepted' ? 'text-green-900' : 'text-gray-900'
+                      }`}>
                         ${quote.total.toFixed(2)}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {quote.status === 'accepted' ? 'Accepted' : 
-                         quote.status === 'sent' ? 'Sent to Client' :
-                         quote.status === 'draft' ? 'Draft' : quote.status}
+                      <p className={`text-sm flex items-center space-x-1 ${
+                        quote.status === 'accepted' ? 'text-green-600' : 'text-gray-500'
+                      }`}>
+                        {getQuoteStatusIcon(quote.status)}
+                        <span>
+                          {quote.status === 'accepted' ? 'Approved' : 
+                           quote.status === 'sent' ? 'Sent to Client' :
+                           quote.status === 'draft' ? 'Draft' : 
+                           quote.status === 'rejected' ? 'Rejected' :
+                           quote.status === 'expired' ? 'Expired' : quote.status}
+                        </span>
                       </p>
                     </div>
                   </div>

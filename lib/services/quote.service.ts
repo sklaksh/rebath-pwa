@@ -369,6 +369,36 @@ class QuoteService {
     }
   }
 
+  // Update quote status
+  async updateQuoteStatus(id: string, status: string): Promise<{ success: boolean; error: QuoteError | null }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: { message: 'User not authenticated' } }
+      }
+
+      const { error } = await this.supabase
+        .from('quotes')
+        .update({ status })
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        return {
+          success: false,
+          error: { message: error.message, code: error.code }
+        }
+      }
+
+      return { success: true, error: null }
+    } catch (error) {
+      return {
+        success: false,
+        error: { message: 'Failed to update quote status' }
+      }
+    }
+  }
+
   // Map database quote to application quote
   private mapDbQuoteToQuote(dbQuote: DbQuote): QuoteData {
     return {
