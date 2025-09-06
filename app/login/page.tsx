@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, AlertCircle, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
@@ -16,6 +16,7 @@ import { toast } from 'react-hot-toast'
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  fullName: z.string().optional(),
 })
 
 type LoginForm = z.infer<typeof loginSchema>
@@ -44,6 +45,7 @@ export default function LoginPage() {
         const { user, error } = await authService.signUp({
           email: data.email,
           password: data.password,
+          fullName: data.fullName,
         })
 
         if (error) {
@@ -176,6 +178,32 @@ export default function LoginPage() {
                   </p>
                 )}
               </div>
+
+              {/* Name Field - Only show during sign up */}
+              {isSignUp && (
+                <div className="space-y-2">
+                  <label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="Enter your full name"
+                      className="pl-10"
+                      {...register('fullName')}
+                      error={!!errors.fullName}
+                    />
+                  </div>
+                  {errors.fullName && (
+                    <p className="text-sm text-red-600 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.fullName.message}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Password Field */}
               <div className="space-y-2">

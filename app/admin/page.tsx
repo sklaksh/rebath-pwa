@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/page-header'
 import { ProtectedRoute } from '@/components/protected-route'
 import { authService, fixtureCategoryService, fixtureOptionService, roomService } from '@/lib/services'
+import { createClient } from '@/lib/supabase/client'
 import type { FixtureCategory, FixtureOption, RoomType } from '@/lib/supabase/types'
 import { 
   Users, 
@@ -26,6 +27,7 @@ import {
 
 function AdminContent() {
   const router = useRouter()
+  const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [users, setUsers] = useState<any[]>([])
@@ -52,6 +54,10 @@ function AdminContent() {
   const [newOptionImageUrl, setNewOptionImageUrl] = useState('')
   const [newOptionIsActive, setNewOptionIsActive] = useState(true)
   const [activeTab, setActiveTab] = useState('users')
+  const [editingUser, setEditingUser] = useState<any | null>(null)
+  const [newUserFullName, setNewUserFullName] = useState('')
+  const [newUserApproved, setNewUserApproved] = useState(true)
+  const [newUserActive, setNewUserActive] = useState(true)
 
   useEffect(() => {
     const checkAdminAndLoadData = async () => {
@@ -302,6 +308,45 @@ function AdminContent() {
     }
   }
 
+  const handleEditUser = (user: any) => {
+    setEditingUser(user)
+    setNewUserFullName(user.full_name || '')
+    setNewUserApproved(user.approved)
+    setNewUserActive(user.is_active !== false) // Default to true if undefined
+  }
+
+  const handleSaveUser = async () => {
+    if (!editingUser) return
+    
+    try {
+      // Update user profile in the database
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: newUserFullName,
+          approved: newUserApproved,
+          is_active: newUserActive
+        })
+        .eq('id', editingUser.id)
+
+      if (error) {
+        toast.error(`Failed to update user: ${error.message}`)
+      } else {
+        toast.success('User updated successfully!')
+        setEditingUser(null)
+        setNewUserFullName('')
+        setNewUserApproved(true)
+        setNewUserActive(true)
+        await loadAllData()
+      }
+    } catch (error) {
+      console.error('Error updating user:', error)
+      toast.error('An unexpected error occurred')
+    }
+  }
+
+
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -416,43 +461,119 @@ function AdminContent() {
           <CardContent>
             <div className="space-y-3">
               {users.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div>
-                      <p className="font-medium">{user.full_name || 'No name'}</p>
-                      <p className="text-sm text-gray-600">{user.email}</p>
+                <div key={user.id} className="p-3 border rounded-lg">
+                  {editingUser?.id === user.id ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Full Name
+                          <span className="text-xs text-gray-500 ml-1">(User's display name)</span>
+                        </label>
+                        <Input
+                          value={newUserFullName}
+                          onChange={(e) => setNewUserFullName(e.target.value)}
+                          placeholder="Enter full name"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="approved"
+                            checked={newUserApproved}
+                            onChange={(e) => setNewUserApproved(e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor="approved" className="text-sm text-gray-700">
+                            <span className="font-medium">Approved:</span> 
+                            <span className="text-xs text-gray-500 ml-1">
+                              {newUserApproved ? 'Can access the system' : 'Pending admin approval'}
+                            </span>
+                          </label>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="active"
+                            checked={newUserActive}
+                            onChange={(e) => setNewUserActive(e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor="active" className="text-sm text-gray-700">
+                            <span className="font-medium">Active:</span> 
+                            <span className="text-xs text-gray-500 ml-1">
+                              {newUserActive ? 'Account is active' : 'Account is deactivated'}
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                      
+                      <div className="flex space-x-2">
+                        <Button size="sm" onClick={handleSaveUser}>
+                          Save Changes
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setEditingUser(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <Badge className={user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}>
-                        {user.role}
-                      </Badge>
-                      <Badge className={user.approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                        {user.approved ? 'Approved' : 'Pending'}
-                      </Badge>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div>
+                          <p className="font-medium">{user.full_name || 'No name'}</p>
+                          <p className="text-sm text-gray-600">{user.email}</p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Badge className={user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}>
+                            {user.role}
+                          </Badge>
+                          <Badge className={user.approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                            {user.approved ? 'Approved' : 'Pending'}
+                          </Badge>
+                          {user.is_active === false && (
+                            <Badge className="bg-red-100 text-red-800">Inactive</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <Settings className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        {!user.approved && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleApproveUser(user.id)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                        )}
+                        {user.role !== 'admin' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMakeAdmin(user.id)}
+                          >
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            Make Admin
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    {!user.approved && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleApproveUser(user.id)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Approve
-                      </Button>
-                    )}
-                    {user.role !== 'admin' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleMakeAdmin(user.id)}
-                      >
-                        <UserPlus className="h-4 w-4 mr-1" />
-                        Make Admin
-                      </Button>
-                    )}
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
