@@ -134,7 +134,7 @@ function ViewAssessmentContent() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title={`${assessment.roomName} Assessment`}
-        backHref="/projects"
+        backHref={assessment.projectId ? `/projects/${assessment.projectId}` : "/projects"}
       />
 
       <div className="max-w-4xl mx-auto p-4">

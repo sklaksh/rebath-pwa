@@ -555,7 +555,7 @@ function EditAssessmentContent() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title={`Edit ${roomType?.displayName || 'Assessment'}`}
-        backHref="/projects"
+        backHref={assessmentData.projectId ? `/projects/${assessmentData.projectId}` : "/projects"}
       />
 
       <div className="max-w-4xl mx-auto p-4">
