@@ -61,18 +61,25 @@ export function PhotoUpload({ photos, onPhotosChange, assessmentId, disabled }: 
 
   const removePhoto = async (index: number) => {
     const photoUrl = photos[index]
+    console.log('Removing photo at index:', index, 'URL:', photoUrl)
+    console.log('Current photos array:', photos)
     
     // If it's a Supabase Storage URL, delete it from storage
     if (photoUrl.includes('supabase')) {
+      console.log('Deleting photo from Supabase storage:', photoUrl)
       const result = await photoService.deletePhoto(photoUrl)
       if (!result.success) {
+        console.error('Failed to delete photo from storage:', result.error)
         toast.error('Failed to delete photo from storage')
         return
       }
+      console.log('Photo deleted from storage successfully')
     }
     
     // Remove from local state
-    onPhotosChange(photos.filter((_, i) => i !== index))
+    const updatedPhotos = photos.filter((_, i) => i !== index)
+    console.log('Updated photos array:', updatedPhotos)
+    onPhotosChange(updatedPhotos)
   }
 
   const startCamera = async () => {

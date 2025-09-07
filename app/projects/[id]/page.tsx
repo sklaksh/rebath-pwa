@@ -225,7 +225,7 @@ function ProjectDetailContent() {
     
     try {
       console.log('Changing status to:', newStatus)
-      const updates = { status: newStatus }
+      const updates = { status: newStatus as any }
       
       console.log('Updates object:', updates)
       const { project: updatedProject, error } = await projectService.updateProject(project.id, updates)
@@ -465,7 +465,8 @@ function ProjectDetailContent() {
                 {assessments.map((assessment) => (
                   <div
                     key={assessment.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/assessment/${assessment.roomType}/${assessment.id}`)}
                   >
                     <div className="flex items-center space-x-4">
                       <div className="text-2xl">
@@ -484,13 +485,13 @@ function ProjectDetailContent() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <Badge className={getAssessmentStatusColor(assessment.status)}>
-                        {assessment.status}
-                      </Badge>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/assessment/${assessment.roomType}/edit/${assessment.id}?projectId=${projectId}`)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/assessment/${assessment.roomType}/edit/${assessment.id}?projectId=${projectId}`)
+                        }}
                       >
                         <Edit className="h-4 w-4 mr-2" />
                         Edit

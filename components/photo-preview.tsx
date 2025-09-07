@@ -1,17 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Palette } from 'lucide-react'
+import { PhotoSketchCanvas } from './sketch-canvas'
 
 interface PhotoPreviewProps {
   photos: string[]
   onRemove?: (index: number) => void
+  onUpdate?: (index: number, newPhotoUrl: string) => void
   disabled?: boolean
   showRemoveButton?: boolean
 }
 
-export function PhotoPreview({ photos, onRemove, disabled, showRemoveButton = true }: PhotoPreviewProps) {
+export function PhotoPreview({ photos, onRemove, onUpdate, disabled, showRemoveButton = true }: PhotoPreviewProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [isSketching, setIsSketching] = useState(false)
 
   const openLightbox = (index: number) => {
     setSelectedIndex(index)
@@ -32,6 +35,22 @@ export function PhotoPreview({ photos, onRemove, disabled, showRemoveButton = tr
       setSelectedIndex(selectedIndex < photos.length - 1 ? selectedIndex + 1 : 0)
     }
   }
+
+  const openSketch = () => {
+    setIsSketching(true)
+  }
+
+  const closeSketch = () => {
+    setIsSketching(false)
+  }
+
+  const saveSketch = (sketchedImageUrl: string) => {
+    if (selectedIndex !== null && onUpdate) {
+      onUpdate(selectedIndex, sketchedImageUrl)
+    }
+    setIsSketching(false)
+  }
+
 
 
   if (photos.length === 0) {
@@ -81,12 +100,12 @@ export function PhotoPreview({ photos, onRemove, disabled, showRemoveButton = tr
             </div>
             {showRemoveButton && onRemove && (
               <button
-                onClick={() => onRemove(index)}
+                onClick={(e) => handleDeleteClick(index, e)}
                 disabled={disabled}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-110"
-                title="Remove photo"
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-110 z-10 border-2 border-white group opacity-70 hover:opacity-100"
+                title="Delete photo"
               >
-                <X className="h-3 w-3" />
+                <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
               </button>
             )}
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-lg" />
@@ -110,6 +129,16 @@ export function PhotoPreview({ photos, onRemove, disabled, showRemoveButton = tr
               className="absolute top-4 right-4 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-colors"
             >
               <X className="h-6 w-6" />
+            </button>
+            
+            
+            {/* Sketch button */}
+            <button
+              onClick={openSketch}
+              className="absolute top-4 right-16 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-colors"
+              title="Sketch on photo"
+            >
+              <Palette className="h-6 w-6" />
             </button>
             
             
@@ -137,6 +166,15 @@ export function PhotoPreview({ photos, onRemove, disabled, showRemoveButton = tr
             </div>
           </div>
         </div>
+      )}
+
+      {/* Sketch Canvas Modal */}
+      {isSketching && selectedIndex !== null && (
+        <PhotoSketchCanvas
+          imageUrl={photos[selectedIndex]}
+          onSave={saveSketch}
+          onCancel={closeSketch}
+        />
       )}
 
     </>
