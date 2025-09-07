@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/page-header'
 import { ProtectedRoute } from '@/components/protected-route'
 import { DeleteConfirmation } from '@/components/delete-confirmation'
-import { projectService } from '@/lib/services'
+import { projectService, authService } from '@/lib/services'
 import type { Project } from '@/lib/services'
 
 function EditProjectContent() {
@@ -21,6 +21,7 @@ function EditProjectContent() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [canDelete, setCanDelete] = useState(false)
   const [formData, setFormData] = useState({
     clientName: '',
     clientEmail: '',
@@ -36,6 +37,24 @@ function EditProjectContent() {
     totalBudget: '',
     notes: ''
   })
+
+  const checkDeletePermission = async () => {
+    try {
+      const { user } = await authService.getCurrentUser()
+      if (!user || !project) return false
+
+      // Check if user is admin
+      const isAdmin = await authService.isAdmin()
+      
+      // Check if user is project creator
+      const isCreator = project.userId === user.id
+
+      return isAdmin || isCreator
+    } catch (error) {
+      console.error('Error checking delete permission:', error)
+      return false
+    }
+  }
 
   useEffect(() => {
     const loadProject = async () => {
@@ -64,6 +83,10 @@ function EditProjectContent() {
             totalBudget: fetchedProject.totalBudget ? fetchedProject.totalBudget.toString() : '',
             notes: fetchedProject.notes || ''
           })
+
+          // Check delete permission after project is loaded
+          const hasDeletePermission = await checkDeletePermission()
+          setCanDelete(hasDeletePermission)
         }
       } catch (error) {
         toast.error('Failed to load project')
@@ -379,13 +402,15 @@ function EditProjectContent() {
 
           {/* Actions */}
           <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="text-red-600 hover:text-red-700"
-            >
-              Delete Project
-            </Button>
+            {canDelete && (
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-red-600 hover:text-red-700"
+              >
+                Delete Project
+              </Button>
+            )}
             
             <div className="flex gap-3">
               <Button
@@ -414,7 +439,7 @@ function EditProjectContent() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
+      {showDeleteConfirm && canDelete && (
         <DeleteConfirmation
           title="Delete Project"
           message={`Are you sure you want to delete the project for ${project?.clientName}? This action cannot be undone.`}

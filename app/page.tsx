@@ -6,7 +6,6 @@ import {
   Home, 
   ChefHat, 
   Calculator, 
-  Calendar, 
   Settings, 
   User,
   Search,
@@ -251,20 +250,6 @@ function DashboardContent() {
                 <div>
                   <h3 className="font-medium text-gray-900">Price Calculator</h3>
                   <p className="text-sm text-gray-500">Calculate project costs</p>
-                </div>
-              </div>
-            </Card>
-            <Card
-              className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => router.push('/schedule')}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg bg-purple-500">
-                  <Calendar className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Schedule</h3>
-                  <p className="text-sm text-gray-500">View appointments</p>
                 </div>
               </div>
             </Card>
