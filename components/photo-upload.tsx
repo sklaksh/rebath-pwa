@@ -29,7 +29,8 @@ export function PhotoUpload({ photos, onPhotosChange, assessmentId, disabled, on
 
     let currentAssessmentId = assessmentId
     if (!currentAssessmentId && onEnsureAssessmentId) {
-      currentAssessmentId = await onEnsureAssessmentId()
+      const ensuredId = await onEnsureAssessmentId()
+      currentAssessmentId = ensuredId || undefined
     }
 
     if (!currentAssessmentId) {
@@ -176,7 +177,8 @@ export function PhotoUpload({ photos, onPhotosChange, assessmentId, disabled, on
     
     let currentAssessmentId = assessmentId
     if (!currentAssessmentId && onEnsureAssessmentId) {
-      currentAssessmentId = await onEnsureAssessmentId()
+      const ensuredId = await onEnsureAssessmentId()
+      currentAssessmentId = ensuredId || undefined
     }
     
     if (!currentAssessmentId) {
