@@ -38,16 +38,18 @@ function EditProjectContent() {
     notes: ''
   })
 
-  const checkDeletePermission = async () => {
+  const checkDeletePermission = async (projectData: Project) => {
     try {
       const { user } = await authService.getCurrentUser()
-      if (!user || !project) return false
+      if (!user || !projectData) {
+        return false
+      }
 
       // Check if user is admin
       const isAdmin = await authService.isAdmin()
       
       // Check if user is project creator
-      const isCreator = project.userId === user.id
+      const isCreator = projectData.userId === user.id
 
       return isAdmin || isCreator
     } catch (error) {
@@ -85,7 +87,7 @@ function EditProjectContent() {
           })
 
           // Check delete permission after project is loaded
-          const hasDeletePermission = await checkDeletePermission()
+          const hasDeletePermission = await checkDeletePermission(fetchedProject)
           setCanDelete(hasDeletePermission)
         }
       } catch (error) {
@@ -441,11 +443,13 @@ function EditProjectContent() {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && canDelete && (
         <DeleteConfirmation
+          isOpen={showDeleteConfirm}
           title="Delete Project"
-          message={`Are you sure you want to delete the project for ${project?.clientName}? This action cannot be undone.`}
+          description={`Are you sure you want to delete the project for ${project?.clientName}? This action cannot be undone.`}
           onConfirm={handleDeleteProject}
-          onCancel={() => setShowDeleteConfirm(false)}
-          isLoading={saving}
+          onClose={() => setShowDeleteConfirm(false)}
+          loading={saving}
+          itemName="Project"
         />
       )}
     </div>
