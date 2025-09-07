@@ -168,7 +168,7 @@ function QuoteDetailContent() {
         toast.error(`Failed to update status: ${error.message}`)
       } else {
         toast.success(`Quote status updated to ${newStatus}`)
-        setQuote(prev => prev ? { ...prev, status: newStatus } : null)
+        setQuote(prev => prev ? { ...prev, status: newStatus as 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' } : null)
       }
     } catch (error) {
       console.error('Error updating quote status:', error)

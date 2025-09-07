@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, ChevronLeft, ChevronRight, Palette } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Palette, Trash2 } from 'lucide-react'
 import { PhotoSketchCanvas } from './sketch-canvas'
 
 interface PhotoPreviewProps {
@@ -100,7 +100,7 @@ export function PhotoPreview({ photos, onRemove, onUpdate, disabled, showRemoveB
             </div>
             {showRemoveButton && onRemove && (
               <button
-                onClick={(e) => handleDeleteClick(index, e)}
+                onClick={(e) => onRemove(index)}
                 disabled={disabled}
                 className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-110 z-10 border-2 border-white group opacity-70 hover:opacity-100"
                 title="Delete photo"

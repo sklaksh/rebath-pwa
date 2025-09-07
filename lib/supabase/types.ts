@@ -54,13 +54,14 @@ export interface Database {
           client_phone: string | null
           address: string
           project_type: 'bathroom' | 'kitchen' | 'full_remodel'
-          status: 'assessment' | 'quote_ready' | 'in_progress' | 'completed' | 'cancelled'
+          status: 'assessment' | 'quote_ready' | 'started' | 'in_progress' | 'completed' | 'cancelled'
           priority: 'low' | 'medium' | 'high' | 'urgent'
           estimated_start_date: string | null
           estimated_completion_date: string | null
           actual_start_date: string | null
           actual_completion_date: string | null
           total_budget: number | null
+          job_description: string | null
           notes: string | null
           created_at: string
           updated_at: string
@@ -74,13 +75,14 @@ export interface Database {
           client_phone?: string | null
           address: string
           project_type: 'bathroom' | 'kitchen' | 'full_remodel'
-          status?: 'assessment' | 'quote_ready' | 'in_progress' | 'completed' | 'cancelled'
+          status?: 'assessment' | 'quote_ready' | 'started' | 'in_progress' | 'completed' | 'cancelled'
           priority?: 'low' | 'medium' | 'high' | 'urgent'
           estimated_start_date?: string | null
           estimated_completion_date?: string | null
           actual_start_date?: string | null
           actual_completion_date?: string | null
           total_budget?: number | null
+          job_description?: string | null
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -94,13 +96,14 @@ export interface Database {
           client_phone?: string | null
           address?: string
           project_type?: 'bathroom' | 'kitchen' | 'full_remodel'
-          status?: 'assessment' | 'quote_ready' | 'in_progress' | 'completed' | 'cancelled'
+          status?: 'assessment' | 'quote_ready' | 'started' | 'in_progress' | 'completed' | 'cancelled'
           priority?: 'low' | 'medium' | 'high' | 'urgent'
           estimated_start_date?: string | null
           estimated_completion_date?: string | null
           actual_start_date?: string | null
           actual_completion_date?: string | null
           total_budget?: number | null
+          job_description?: string | null
           notes?: string | null
           created_at?: string
           updated_at?: string

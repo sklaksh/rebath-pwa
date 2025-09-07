@@ -66,7 +66,7 @@ function EditQuoteContent() {
 
         if (fetchedQuote) {
           setQuoteItems(fetchedQuote.items || [])
-          setLaborItems(fetchedQuote.laborItems || [])
+          setLaborItems([]) // Labor items are managed separately
           setTaxRate(fetchedQuote.taxRate || 0.08)
           setDiscountPercentage(fetchedQuote.discountPercentage || 0)
           setValidUntil(fetchedQuote.validUntil ? fetchedQuote.validUntil.split('T')[0] : '')
@@ -119,11 +119,19 @@ function EditQuoteContent() {
   const addQuoteItem = (option: FixtureOption) => {
     const newItem: QuoteItem = {
       id: Date.now().toString(),
+      type: 'fixture',
+      fixtureId: option.id,
       name: option.name,
       description: option.description || '',
+      brand: option.brand,
+      model: option.model,
+      size: option.size,
+      material: option.material,
+      color: option.color,
       quantity: 1,
-      unitPrice: option.price || 0,
-      category: option.categoryName || ''
+      unitPrice: option.basePrice || 0,
+      installationCost: option.installationCost,
+      totalPrice: option.basePrice || 0
     }
     setQuoteItems(prev => [...prev, newItem])
   }
@@ -143,11 +151,12 @@ function EditQuoteContent() {
 
     const newItem: QuoteItem = {
       id: Date.now().toString(),
+      type: 'labor',
       name: newLaborItem.name,
       description: newLaborItem.description,
       quantity: newLaborItem.quantity,
       unitPrice: newLaborItem.unitPrice,
-      category: 'Labor'
+      totalPrice: newLaborItem.quantity * newLaborItem.unitPrice
     }
     setLaborItems(prev => [...prev, newItem])
     setNewLaborItem({ name: '', description: '', quantity: 1, unitPrice: 0 })
@@ -187,23 +196,22 @@ function EditQuoteContent() {
     setSaving(true)
     try {
       const updatedQuote: Partial<QuoteData> = {
-        items: quoteItems,
-        laborItems: laborItems,
+        items: [...quoteItems, ...laborItems],
         taxRate: taxRate,
         discountPercentage: discountPercentage,
         validUntil: validUntil || undefined,
         notes: notes || undefined,
         subtotal: calculateSubtotal(),
-        tax: calculateTax(),
-        discount: calculateDiscount(),
+        taxAmount: calculateTax(),
+        discountAmount: calculateDiscount(),
         total: calculateTotal()
       }
 
-      const { success, error } = await quoteService.updateQuote(quoteId, updatedQuote)
+      const { quote: updatedQuoteData, error } = await quoteService.updateQuote(quoteId, updatedQuote)
       
       if (error) {
         toast.error(`Failed to update quote: ${error.message}`)
-      } else {
+      } else if (updatedQuoteData) {
         toast.success('Quote updated successfully!')
         router.push(`/projects/${projectId}/quote/${quoteId}`)
       }
@@ -306,7 +314,7 @@ function EditQuoteContent() {
                             <p className="text-xs text-gray-600 mt-1">{option.description}</p>
                           )}
                           <p className="text-sm font-medium text-primary-600 mt-1">
-                            ${option.price?.toFixed(2) || '0.00'}
+                            ${option.basePrice?.toFixed(2) || '0.00'}
                           </p>
                         </div>
                         <Button
@@ -406,7 +414,7 @@ function EditQuoteContent() {
                           {item.description && (
                             <p className="text-sm text-gray-600 mt-1">{item.description}</p>
                           )}
-                          <Badge variant="outline" className="mt-2">{item.category}</Badge>
+                          <Badge variant="outline" className="mt-2">{item.type}</Badge>
                         </div>
                         <Button
                           variant="outline"

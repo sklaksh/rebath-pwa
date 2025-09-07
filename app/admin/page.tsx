@@ -11,7 +11,8 @@ import { PageHeader } from '@/components/page-header'
 import { ProtectedRoute } from '@/components/protected-route'
 import { authService, fixtureCategoryService, fixtureOptionService, roomService } from '@/lib/services'
 import { createClient } from '@/lib/supabase/client'
-import type { FixtureCategory, FixtureOption, RoomType } from '@/lib/supabase/types'
+import type { FixtureCategory, FixtureOption } from '@/lib/supabase/types'
+import type { RoomType } from '@/lib/services/room.service'
 import { 
   Users, 
   Settings, 
@@ -185,7 +186,7 @@ function AdminContent() {
 
   const handleEditRoomType = (roomType: RoomType) => {
     setEditingRoomType(roomType)
-    setNewRoomTypeName(roomType.display_name)
+    setNewRoomTypeName(roomType.displayName)
     setNewRoomTypeDescription(roomType.description || '')
   }
 
@@ -193,14 +194,14 @@ function AdminContent() {
     if (!editingRoomType) return
     
     try {
-      const { roomType, error } = await roomService.updateRoomType(editingRoomType.id, {
-        display_name: newRoomTypeName,
+      const { success, error } = await roomService.updateRoomType(editingRoomType.id, {
+        displayName: newRoomTypeName,
         description: newRoomTypeDescription
       })
       
       if (error) {
         toast.error(`Failed to update room type: ${error.message}`)
-      } else {
+      } else if (success) {
         toast.success('Room type updated successfully!')
         setEditingRoomType(null)
         setNewRoomTypeName('')
@@ -256,12 +257,12 @@ function AdminContent() {
         category_id: newOptionCategoryId,
         brand: newOptionBrand,
         model: newOptionModel,
-        size: newOptionSize || null,
-        material: newOptionMaterial || null,
-        color: newOptionColor || null,
+        size: newOptionSize || undefined,
+        material: newOptionMaterial || undefined,
+        color: newOptionColor || undefined,
         base_price: parseFloat(newOptionBasePrice) || 0,
         installation_cost: parseFloat(newOptionInstallationCost) || 0,
-        image_url: newOptionImageUrl || null,
+        image_url: newOptionImageUrl || undefined,
         is_active: newOptionIsActive
       })
       
@@ -965,7 +966,7 @@ function AdminContent() {
                   ) : (
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium">{roomType.display_name}</p>
+                        <p className="font-medium">{roomType.displayName}</p>
                         {roomType.description && (
                           <p className="text-sm text-gray-600">{roomType.description}</p>
                         )}
