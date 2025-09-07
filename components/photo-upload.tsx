@@ -12,9 +12,10 @@ interface PhotoUploadProps {
   onPhotosChange: (photos: string[]) => void
   assessmentId?: string
   disabled?: boolean
+  onEnsureAssessmentId?: () => Promise<string | null>
 }
 
-export function PhotoUpload({ photos, onPhotosChange, assessmentId, disabled }: PhotoUploadProps) {
+export function PhotoUpload({ photos, onPhotosChange, assessmentId, disabled, onEnsureAssessmentId }: PhotoUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
@@ -26,7 +27,12 @@ export function PhotoUpload({ photos, onPhotosChange, assessmentId, disabled }: 
     const files = event.target.files
     if (!files || files.length === 0) return
 
-    if (!assessmentId) {
+    let currentAssessmentId = assessmentId
+    if (!currentAssessmentId && onEnsureAssessmentId) {
+      currentAssessmentId = await onEnsureAssessmentId()
+    }
+
+    if (!currentAssessmentId) {
       toast.error('Assessment ID is required for photo upload')
       return
     }
@@ -34,7 +40,7 @@ export function PhotoUpload({ photos, onPhotosChange, assessmentId, disabled }: 
     setUploading(true)
     try {
       const fileArray = Array.from(files)
-      const results = await photoService.uploadMultiplePhotos(fileArray, assessmentId)
+      const results = await photoService.uploadMultiplePhotos(fileArray, currentAssessmentId)
       
       const successfulUploads = results
         .filter(result => result.success)
@@ -168,7 +174,12 @@ export function PhotoUpload({ photos, onPhotosChange, assessmentId, disabled }: 
 
     console.log('Saving captured photo, assessmentId:', assessmentId)
     
-    if (!assessmentId) {
+    let currentAssessmentId = assessmentId
+    if (!currentAssessmentId && onEnsureAssessmentId) {
+      currentAssessmentId = await onEnsureAssessmentId()
+    }
+    
+    if (!currentAssessmentId) {
       // If no assessmentId, just add the data URL to photos for now
       console.log('No assessmentId, adding data URL to photos')
       onPhotosChange([...photos, capturedImage])
@@ -189,7 +200,7 @@ export function PhotoUpload({ photos, onPhotosChange, assessmentId, disabled }: 
       console.log('Uploading photo file:', file.name, file.size, 'bytes')
       
       // Upload the photo
-      const result = await photoService.uploadMultiplePhotos([file], assessmentId)
+      const result = await photoService.uploadMultiplePhotos([file], currentAssessmentId)
       
       console.log('Upload result:', result)
       

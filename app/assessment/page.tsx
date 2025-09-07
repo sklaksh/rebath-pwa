@@ -20,12 +20,16 @@ function AssessmentSelectionContent() {
     const fetchRoomTypes = async () => {
       try {
         const { roomTypes: fetchedRoomTypes, error } = await roomService.getRoomTypes()
+        
         if (error) {
-          toast.error('Failed to load room types')
+          console.error('Error loading room types:', error)
+          toast.error(`Failed to load room types: ${error.message}`)
           return
         }
+        
         setRoomTypes(fetchedRoomTypes)
       } catch (error) {
+        console.error('Unexpected error:', error)
         toast.error('An unexpected error occurred')
       } finally {
         setLoading(false)
@@ -41,7 +45,17 @@ function AssessmentSelectionContent() {
   )
 
   const handleRoomTypeSelect = (roomType: RoomType) => {
-    router.push(`/assessment/${roomType.name}`)
+    // Get projectId from URL search params
+    const params = new URLSearchParams(window.location.search)
+    const projectId = params.get('projectId')
+    
+    if (projectId) {
+      router.push(`/assessment/${roomType.name}?projectId=${projectId}`)
+    } else {
+      // If no projectId, redirect to projects page
+      toast.error('Assessment must be linked to a project. Please start from a project page.')
+      router.push('/projects')
+    }
   }
 
   if (loading) {

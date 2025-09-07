@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import { 
   ArrowLeft, 
   Edit, 
@@ -275,13 +276,14 @@ function ProjectDetailContent() {
       <header className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            <Link href="/">
+              <Button
+                variant="ghost"
+                size="sm"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
             <div>
               <h1 className="text-lg font-semibold text-gray-900">{project.name}</h1>
               <div className="flex items-center space-x-2">
@@ -444,9 +446,19 @@ function ProjectDetailContent() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Project Assessments</span>
-              <Badge variant="outline">
-                {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
-              </Badge>
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline">
+                  {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/assessment?projectId=${projectId}`)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Assessment
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -459,6 +471,13 @@ function ProjectDetailContent() {
                 <p className="text-gray-600 mb-4">
                   Start by creating room assessments for this project.
                 </p>
+                <Button
+                  onClick={() => router.push(`/assessment?projectId=${projectId}`)}
+                  className="bg-primary-600 hover:bg-primary-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Assessment
+                </Button>
               </div>
             ) : (
               <div className="space-y-3">
@@ -612,53 +631,6 @@ function ProjectDetailContent() {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Room Assessments</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {roomTypes.map((roomType) => (
-                    <Button
-                      key={roomType.id}
-                      variant="outline"
-                      onClick={() => router.push(`/assessment/${roomType.name}?projectId=${project.id}`)}
-                      className="h-auto p-3 flex flex-col items-center space-y-2"
-                    >
-                      <span className="text-lg">{getRoomTypeIcon(roomType)}</span>
-                      <span className="text-sm">{roomType.displayName}</span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Other Actions</h4>
-                <div className="grid grid-cols-1 gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push(`/projects/${projectId}/quote/new`)}
-                    className="h-auto p-4 flex flex-col items-center space-y-2"
-                  >
-                    <DollarSign className="h-6 w-6" />
-                    <span>Create Quote</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push('/calculator')}
-                    className="h-auto p-4 flex flex-col items-center space-y-2"
-                  >
-                    <Calculator className="h-6 w-6" />
-                    <span>Price Calculator</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Project Sharing */}
         <ProjectSharing 

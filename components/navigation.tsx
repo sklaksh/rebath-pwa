@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 export function Navigation() {
   const pathname = usePathname()
 
-  // Don't show navigation on login page
-  if (pathname === '/login') {
+  // Don't show navigation on login page or assessment pages
+  if (pathname === '/login' || pathname.startsWith('/assessment/')) {
     return null
   }
 

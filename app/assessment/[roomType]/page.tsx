@@ -222,6 +222,22 @@ function DynamicAssessmentContent() {
     }
   }
 
+  const ensureAssessmentId = async () => {
+    if (!assessmentId) {
+      try {
+        const result = await assessmentService.saveDraft(assessmentData)
+        if (result.success && 'assessment' in result && result.assessment?.id) {
+          setAssessmentId(result.assessment.id)
+          return result.assessment.id
+        }
+      } catch (error) {
+        console.error('Error creating assessment for photos:', error)
+        toast.error('Failed to prepare assessment for photo upload')
+      }
+    }
+    return assessmentId
+  }
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -491,6 +507,7 @@ function DynamicAssessmentContent() {
                   photos={assessmentData.photos}
                   onPhotosChange={(photos) => setAssessmentData(prev => ({ ...prev, photos }))}
                   assessmentId={assessmentId || undefined}
+                  onEnsureAssessmentId={ensureAssessmentId}
                 />
               </CardContent>
             </Card>
@@ -695,7 +712,7 @@ function DynamicAssessmentContent() {
       </div>
 
       {/* Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-50">
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
