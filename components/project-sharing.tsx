@@ -27,10 +27,18 @@ interface ProjectPermission {
   }
 }
 
+interface User {
+  id: string
+  full_name: string | null
+  email: string
+  role: string
+}
+
 export function ProjectSharing({ projectId, isOwner, isAdmin }: ProjectSharingProps) {
   const [permissions, setPermissions] = useState<ProjectPermission[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(false)
-  const [sharingEmail, setSharingEmail] = useState('')
+  const [selectedUserId, setSelectedUserId] = useState('')
   const [permissionType, setPermissionType] = useState<'view' | 'edit' | 'admin'>('view')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
@@ -40,6 +48,7 @@ export function ProjectSharing({ projectId, isOwner, isAdmin }: ProjectSharingPr
   useEffect(() => {
     if (canManageSharing) {
       loadPermissions()
+      loadUsers()
     }
   }, [projectId, canManageSharing])
 
@@ -59,32 +68,42 @@ export function ProjectSharing({ projectId, isOwner, isAdmin }: ProjectSharingPr
     }
   }
 
+  const loadUsers = async () => {
+    try {
+      const { data: { user } } = await (projectService as any).supabase.auth.getUser()
+      if (!user) return
+
+      // Get all users from profiles table
+      const { data: profilesData, error } = await (projectService as any).supabase
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .order('full_name')
+
+      if (error) {
+        console.error('Error loading users:', error)
+        return
+      }
+
+      setUsers(profilesData || [])
+    } catch (error) {
+      console.error('Failed to load users:', error)
+    }
+  }
+
   const handleShareProject = async () => {
-    if (!sharingEmail.trim()) {
-      toast.error('Please enter an email address')
+    if (!selectedUserId) {
+      toast.error('Please select a user')
       return
     }
 
     setLoading(true)
     try {
-      // First, find the user by email
-      const { data: userProfile, error: userError } = await (projectService as any).supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', sharingEmail.trim())
-        .single()
-
-      if (userError || !userProfile) {
-        toast.error('User not found with that email address')
-        return
-      }
-
-      const result = await projectService.shareProject(projectId, userProfile.id, permissionType)
+      const result = await projectService.shareProject(projectId, selectedUserId, permissionType)
       if (result.error) {
         toast.error(result.error.message)
       } else {
         toast.success('Project shared successfully!')
-        setSharingEmail('')
+        setSelectedUserId('')
         loadPermissions()
       }
     } catch (error) {
@@ -163,13 +182,23 @@ export function ProjectSharing({ projectId, isOwner, isAdmin }: ProjectSharingPr
         <div className="space-y-2">
           <label className="text-sm font-medium">Share with user</label>
           <div className="flex gap-2">
-            <Input
-              type="email"
-              placeholder="Enter user email"
-              value={sharingEmail}
-              onChange={(e) => setSharingEmail(e.target.value)}
-              className="flex-1"
-            />
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="">Select a user...</option>
+              {users
+                .filter(user => !permissions.some(p => p.user_id === user.id))
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.full_name || 'Unknown'} ({user.email}) - {user.role}
+                  </option>
+                ))}
+              {users.filter(user => !permissions.some(p => p.user_id === user.id)).length === 0 && (
+                <option value="" disabled>All users already have access</option>
+              )}
+            </select>
             <select
               value={permissionType}
               onChange={(e) => setPermissionType(e.target.value as 'view' | 'edit' | 'admin')}
@@ -181,7 +210,7 @@ export function ProjectSharing({ projectId, isOwner, isAdmin }: ProjectSharingPr
             </select>
             <Button
               onClick={handleShareProject}
-              disabled={loading || !sharingEmail.trim()}
+              disabled={loading || !selectedUserId}
               className="flex items-center gap-2"
             >
               <UserPlus className="h-4 w-4" />

@@ -298,7 +298,7 @@ class AuthService {
 
       const { error } = await this.supabase
         .from('profiles')
-        .update({ approved: true })
+        .update({ approved: true, is_active: true })
         .eq('id', userId)
 
       if (error) {

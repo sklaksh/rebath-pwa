@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { AuthProvider } from './auth-provider'
+import { AuthGuard } from './auth-guard'
 
 // Create Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -46,7 +47,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {children}
+        <AuthGuard>
+          {children}
+        </AuthGuard>
         {process.env.NODE_ENV === 'development' && (
           <ReactQueryDevtools initialIsOpen={false} />
         )}

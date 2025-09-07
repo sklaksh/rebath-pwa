@@ -128,14 +128,46 @@ class ProjectService {
           .order('created_at', { ascending: false })
       } else {
         // For regular users, get their own projects + shared projects
-        query = this.supabase
-          .from('projects')
-          .select(`
-            *,
-            project_permissions!inner(permission_type)
-          `)
-          .or(`user_id.eq.${user.id},project_permissions.user_id.eq.${user.id}`)
-          .order('created_at', { ascending: false })
+        // First get project IDs that are shared with this user
+        const { data: sharedProjectIds } = await this.supabase
+          .from('project_permissions')
+          .select('project_id')
+          .eq('user_id', user.id)
+
+        const sharedIds = sharedProjectIds?.map(p => p.project_id) || []
+        
+        // Get projects: owned by user OR shared with user
+        if (sharedIds.length > 0) {
+          // Get owned projects
+          const { data: ownedProjects } = await this.supabase
+            .from('projects')
+            .select('*')
+            .eq('user_id', user.id)
+          
+          // Get shared projects
+          const { data: sharedProjects } = await this.supabase
+            .from('projects')
+            .select('*')
+            .in('id', sharedIds)
+          
+          // Combine and sort
+          const allProjects = [...(ownedProjects || []), ...(sharedProjects || [])]
+          const uniqueProjects = allProjects.filter((project, index, self) => 
+            index === self.findIndex(p => p.id === project.id)
+          )
+          const sortedProjects = uniqueProjects.sort((a, b) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          )
+          
+          const projects = sortedProjects.map(project => this.mapDbProjectToProject(project))
+          return { projects, error: null }
+        } else {
+          query = this.supabase
+            .from('projects')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+        }
       }
 
       const { data, error } = await query
